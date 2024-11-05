@@ -37,7 +37,6 @@ class MainGUI():
     def __init__(self):
         """Set up the GUI and allow the user to call subsequent functions"""
 
-
         # create GUI window
         self.root = tk.Tk()
 
@@ -58,12 +57,13 @@ class MainGUI():
 
         # create a blank dictionary to store our game classes
         self.games = {}
+        self.number_of_games = 0 
+
+        # set up a few markers
+        self.data_extracted = False
                 
 
-
-
-
-
+        # run the app
         self.root.mainloop()
         print("check")
 
@@ -89,62 +89,66 @@ class MainGUI():
         # add a status label
         self.status_label = tk.Label(self.home_page, text="Please click for data input")
         self.status_label.pack()
+
+        # add new game button
+        self.new_game_button = tk.Button(self.home_page, text="New Game", font=('Arial', 16), command=self.start_new_game)
+        self.new_game_button.pack(padx=20, pady=20)
     
-
-
 
     def extract_stock_data(self):
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
 
-        # start by importing all the data
-        extraction_tool = DataExtractor()
-        self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
+        if self.data_extracted == False:
+            # set the falg to True
+            self.data_extracted = True
 
-        resultsContents = tk.StringVar()
-        self.status_label['textvariable'] = resultsContents
-        resultsContents.set('New value to display')
+            # import all the data
+            extraction_tool = DataExtractor()
+            self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
 
-        # create player classes
-        for player in self.imported_roster:
-            self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
+            # change button text once data is extracted !! move this later
+            resultsContents = tk.StringVar()
+            self.status_label['textvariable'] = resultsContents
+            resultsContents.set('Data extracted')
 
-        self._create_game_classes()
+            # create player classes
+            for player in self.imported_roster:
+                self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
+
+            # create game classes
+            self._create_game_classes_from_import()
                     
 
 
-    def _create_game_classes(self):
+    def _create_game_classes_from_import(self):
         """Creates a class for each game played and runs the relevant functions"""
-
 
         # create a loop for each game
         for game_number in range(self.tournament_metadata['Number of Games']):
-            # Assign a name to the game
-            game_class_name = "Game " + str(game_number+1)
-
-            # create a dictionary to store performance data for each player
-            for player in self.imported_roster:
-                self.imported_roster[player][game_class_name] = {
-                    "Points Played" : 0,
-                    "Points Scored" : 0,
-                    "Points Won" : 0,
-                    "Turns Won" : 0,
-                    "Turns Lost" : 0
-                }
+            self.start_new_game()
 
             # find the set of raw data that applies to that game
             for game_data in self.raw_game_data:
-                if game_class_name in game_data:
+                if self.active_game in game_data:
                     break
-
-            # create a new class with the assembled input data
-            #!! self.games[game_class_name] = FrisbeeGame(self.imported_roster, self.raw_game_data[game_data])
-            self.games[game_class_name] = FrisbeeGame(self, game_class_name)
-
-            self.games[game_class_name].crunch_data_from_import(self.raw_game_data[game_data]['Turns per Point'])
+            
+            self.games[self.active_game].crunch_data_from_import(self.raw_game_data[game_data]['Turns per Point'])
 
 
+    def start_new_game(self):
+        """Creates the class for a new game when button pressed by user"""
+        
+        # increment game number
+        self.number_of_games += 1
 
+        # Assign a name to the game
+        game_class_name = "Game " + str(self.number_of_games)
 
+        # create a new class with the assembled input data
+        self.games[game_class_name] = FrisbeeGame(self, game_class_name)
+
+        # make a note of what the active game is called
+        self.active_game = game_class_name
 
 # call the main code
 if __name__ == "__main__":
