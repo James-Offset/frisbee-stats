@@ -42,7 +42,7 @@ class Team():
 
         # add heading labels
         self.r_head_1 = tk.Label(self.roster_page, text="Player Name", font=('Arial', 18))
-        self.r_head_1.grid(row=0 , column = 0, sticky=tk.W + tk.E)
+        self.r_head_1.grid(row=0 , column = 0, sticky=tk.W + tk.E, pady=10)
 
         self.r_head_2 = tk.Label(self.roster_page, text="Player No.", font=('Arial', 18))
         self.r_head_2.grid(row=0 , column = 1, sticky=tk.W + tk.E)

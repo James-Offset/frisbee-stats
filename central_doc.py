@@ -110,9 +110,9 @@ class MainGUI():
             self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
 
             # change button text once data is extracted !! move this later
-            resultsContents = tk.StringVar()
-            self.status_label['textvariable'] = resultsContents
-            resultsContents.set('Import Game Data')
+            self.resultsContents = tk.StringVar()
+            self.status_label['textvariable'] = self.resultsContents
+            self.resultsContents.set('Import Game Data')
 
             # create player classes
             for player in self.imported_roster:
@@ -122,7 +122,7 @@ class MainGUI():
             # create game classes
             self._create_game_classes_from_import()
             self.game_import = True
-            resultsContents.set('Data extracted')
+            self.resultsContents.set('Data extracted')
                     
 
 
@@ -139,25 +139,26 @@ class MainGUI():
                     break
             
             self.games[self.active_game].crunch_data_from_import(self.raw_game_data[game_data]['Turns per Point'])
+            self.live_game.end_game()
 
 
     def start_new_game(self):
         """Creates the class for a new game when button pressed by user"""
         
-        # increment game number
-        self.number_of_games += 1
-
-        # Assign a name to the game
-        game_class_name = "Game " + str(self.number_of_games)
-
-        # create a new class with the assembled input data
-        self.games[game_class_name] = FrisbeeGame(self, game_class_name)
-
-        # make a note of what the active game is called
-        self.active_game = game_class_name
-
-        # create a live game if there isn't one and reset the live game tab
         if self.live_game_active == False:
+            # increment game number
+            self.number_of_games += 1
+
+            # Assign a name to the game
+            game_class_name = "Game " + str(self.number_of_games)
+
+            # create a new class with the assembled input data
+            self.games[game_class_name] = FrisbeeGame(self, game_class_name)
+
+            # make a note of what the active game is called
+            self.active_game = game_class_name
+
+            # create a live game
             self.live_game_active = True
             self.live_game = LiveGame(self)
 

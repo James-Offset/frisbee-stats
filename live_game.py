@@ -105,7 +105,7 @@ class LiveGame():
         self.number_col = {}
         self.check_col = {}
         self.check_values = {}
-        row_count_memory = row_count
+        row_count_memory = row_count-1
 
         for player in self.parent.team.roster:
             row_count+=1
@@ -122,7 +122,7 @@ class LiveGame():
             self.check_col[player].grid(row=row_count , column=3 , sticky=tk.W + tk.E)
 
         # Add a label showing the total number of players
-        row_count_memory += 2
+        row_count_memory += 1
 
         self.player_count_label = tk.Label(self.live_page, text="Players on:", font=('Arial', 16))
         self.player_count_label.grid(row=row_count_memory , column = 4, sticky=tk.W + tk.E + tk.N, columnspan=2)
@@ -138,6 +138,10 @@ class LiveGame():
         self.entry_message_label = tk.Label(self.live_page, textvariable=self.entry_message, wraplength=80, font=('Arial', 12))
         self.entry_message_label.grid(row=row_count_memory , rowspan=3, column = 4, sticky=tk.W + tk.E)
         self.entry_message.set(self.default_count_message)
+
+        row_count_memory+=4
+        self.end_game_button = tk.Button(self.live_page, text="End Game", font=('Arial', 18), command=self.end_game)
+        self.end_game_button.grid(row=row_count_memory, column=4)
 
     def plus_function(self):
         """Increments the turnover count when the plus button is pressed"""
@@ -200,6 +204,10 @@ class LiveGame():
         self.turnover_count = 0 
         self.turnover_count_value.set(self.turnover_count)
 
+    def end_game(self):
+        """Ends the live game"""
 
+        self.parent.live_game_active=False
+        self.live_page.destroy()
 
 
