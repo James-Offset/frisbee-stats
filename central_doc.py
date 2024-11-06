@@ -27,6 +27,7 @@ from tkinter import ttk
 from data_extractor import DataExtractor
 from frisbee_match import FrisbeeGame
 from team_roster import Team
+from live_game import LiveGame
 
 
 
@@ -61,6 +62,8 @@ class MainGUI():
 
         # set up a few markers
         self.data_extracted = False
+        self.game_import = False
+        self.live_game_active = False
                 
 
         # run the app
@@ -87,11 +90,11 @@ class MainGUI():
         self.data_button.pack(padx=10,pady=10)
 
         # add a status label
-        self.status_label = tk.Label(self.home_page, text="Please click for data input")
+        self.status_label = tk.Label(self.home_page, text="Please click for roster import")
         self.status_label.pack()
 
         # add new game button
-        self.new_game_button = tk.Button(self.home_page, text="New Game", font=('Arial', 16), command=self.start_new_game)
+        self.new_game_button = tk.Button(self.home_page, text="Start New Game", font=('Arial', 16), command=self.start_new_game)
         self.new_game_button.pack(padx=20, pady=20)
     
 
@@ -109,14 +112,17 @@ class MainGUI():
             # change button text once data is extracted !! move this later
             resultsContents = tk.StringVar()
             self.status_label['textvariable'] = resultsContents
-            resultsContents.set('Data extracted')
+            resultsContents.set('Import Game Data')
 
             # create player classes
             for player in self.imported_roster:
                 self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
 
+        elif self.game_import == False:
             # create game classes
             self._create_game_classes_from_import()
+            self.game_import = True
+            resultsContents.set('Data extracted')
                     
 
 
@@ -149,6 +155,12 @@ class MainGUI():
 
         # make a note of what the active game is called
         self.active_game = game_class_name
+
+        # create a live game if there isn't one and reset the live game tab
+        if self.live_game_active == False:
+            self.live_game_active = True
+            self.live_game = LiveGame(self)
+
 
 # call the main code
 if __name__ == "__main__":
