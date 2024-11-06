@@ -70,6 +70,8 @@ class FrisbeeGame():
 
         self._configure_table()
 
+        self._initiate_game_state()
+
     def _configure_table(self):
         """Sets up the table that presents the game summary on the game tab"""
 
@@ -110,15 +112,13 @@ class FrisbeeGame():
     def crunch_data_from_import(self, list_of_turns):
         """When using imported data, this function calls other functions to calculate the results"""
 
-        self.work_out_team_performance()
-
         self.list_of_turns = list_of_turns
 
         # run the loop for each point to fill each category
         for number_of_turns in self.list_of_turns:
-            self.evaluate_point(number_of_turns)
+            none = self.evaluate_point(number_of_turns)
 
-    def work_out_team_performance(self):
+    def _initiate_game_state(self):
         """Looks at the number of turns and calcualtes the points won/lost and turnovers won/lost per point"""
         self.team_performance = {
             "Hold or Break" : [],
@@ -199,4 +199,9 @@ class FrisbeeGame():
 
         # reset the modifier for who starts the next point on defense
         self.o_start_indicator = 1 - (our_score * 2)
+
+        # create a text representation of the live score for the live tab
+        live_score_text = "Score: " + str(self.live_team_score) + " - " + str(self.live_opp_score)
+
+        return live_score_text
             
