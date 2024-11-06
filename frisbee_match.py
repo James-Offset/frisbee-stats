@@ -96,16 +96,16 @@ class FrisbeeGame():
         self.start_head = tk.Label(self.game_page, text="Start", font=('Arial', 18))
         self.start_head.grid(row=0 , column = 1, sticky=tk.W + tk.E)
 
-        self.concede_head = tk.Label(self.game_page, text="Turn Con", font=('Arial', 18))
+        self.concede_head = tk.Label(self.game_page, text="TC", font=('Arial', 18))
         self.concede_head.grid(row=0 , column = 2, sticky=tk.W + tk.E)
 
-        self.win_head = tk.Label(self.game_page, text="Turn Won", font=('Arial', 18))
+        self.win_head = tk.Label(self.game_page, text="TW", font=('Arial', 18))
         self.win_head.grid(row=0 , column = 3, sticky=tk.W + tk.E)
 
         self.result_head = tk.Label(self.game_page, text="Result", font=('Arial', 18))
         self.result_head.grid(row=0 , column = 4, sticky=tk.W + tk.E)
 
-        self.score_head = tk.Label(self.game_page, text="Live Score", font=('Arial', 18))
+        self.score_head = tk.Label(self.game_page, text="Score", font=('Arial', 18))
         self.score_head.grid(row=0 , column = 5, sticky=tk.W + tk.E)
 
 
@@ -126,7 +126,8 @@ class FrisbeeGame():
             "Team Score" : [],
             "Op Score" : [],
             "Disc Won" : [],
-            "Disc Lost" : []
+            "Disc Lost" : [],
+            "Players on Pitch" : [],
         }
 
         #!! Fix this
@@ -142,7 +143,6 @@ class FrisbeeGame():
         self.live_team_score = 0
         self.live_opp_score = 0
 
-            
 
     def evaluate_point(self, number_of_turns):
         """Takes the information from a completed point and updates necessary variables"""
@@ -205,3 +205,7 @@ class FrisbeeGame():
 
         return live_score_text
             
+    def log_active_players(self, list_of_active_players):
+        """Do something to record which players were on the pitch for a point"""
+
+        self.team_performance["Players on Pitch"].append(list_of_active_players)

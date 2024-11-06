@@ -101,25 +101,25 @@ class LiveGame():
         self.r_head_2.grid(row=row_count , column = 2, sticky=tk.W + tk.E)
         
         # create a roster table
-        self.name_col = {}
-        self.number_col = {}
-        self.check_col = {}
-        self.check_values = {}
+        self.roster_widgets = {}
         row_count_memory = row_count-1
 
         for player in self.parent.team.roster:
-            row_count+=1
-            self.name_col[player] = tk.Label(self.live_page, text=player, font=('Arial', 16))
-            self.name_col[player].grid(row=row_count , column =0 , sticky=tk.W + tk.E, columnspan=2)
+            # create a plater profile to manage their widgets
+            self.roster_widgets[player] = {}
 
-            number_text = self.parent.team.roster[player]["Number"]
-            self.number_col[player] = tk.Label(self.live_page, text=number_text, font=('Arial', 16))
-            self.number_col[player].grid(row=row_count , column =2 , sticky=tk.W + tk.E)
+            row_count+=1
+            self.roster_widgets[player]["name_col"] = tk.Label(self.live_page, text=player, font=('Arial', 16))
+            self.roster_widgets[player]["name_col"].grid(row=row_count , column =0 , sticky=tk.W + tk.E, columnspan=2)
+
+            number_text = self.parent.team.roster[player].number
+            self.roster_widgets[player]["number_col"] = tk.Label(self.live_page, text=number_text, font=('Arial', 16))
+            self.roster_widgets[player]["number_col"].grid(row=row_count , column =2 , sticky=tk.W + tk.E)
 
             # add checkboxes here
-            self.check_values[player] = tk.IntVar()
-            self.check_col[player] = tk.Checkbutton(self.live_page, variable=self.check_values[player], command=self.update_player_total)
-            self.check_col[player].grid(row=row_count , column=3 , sticky=tk.W + tk.E)
+            self.roster_widgets[player]["checkbox_value"] = tk.IntVar()
+            self.roster_widgets[player]["check_col"] = tk.Checkbutton(self.live_page, variable=self.roster_widgets[player]["checkbox_value"], command=self.update_player_total)
+            self.roster_widgets[player]["check_col"].grid(row=row_count , column=3 , sticky=tk.W + tk.E)
 
         # Add a label showing the total number of players
         row_count_memory += 1
@@ -129,7 +129,7 @@ class LiveGame():
 
         row_count_memory+=1
         self.player_count = tk.IntVar()
-        self.player_count_display = tk.Label(self.live_page, textvariable=self.player_count, width = 6, font=('Arial', 18), bg='gray80')
+        self.player_count_display = tk.Label(self.live_page, textvariable=self.player_count, width = 6, font=('Arial', 18), bg='gray90')
         self.player_count_display.grid(row=row_count_memory , column = 4)
         self.player_count.set(0)
 
@@ -167,8 +167,8 @@ class LiveGame():
     def update_player_total(self):
         """When a checkbox is checked or unchecked, we update the count of checked boxes"""
         players_checked = 0
-        for player_box in self.check_values:
-            checkbox_value = self.check_values[player_box].get()
+        for player in self.roster_widgets:
+            checkbox_value = self.roster_widgets[player]["checkbox_value"].get()
             players_checked += checkbox_value
         
         self.player_count.set(players_checked)
@@ -179,17 +179,26 @@ class LiveGame():
             self.player_count_display.config(bg='PaleGreen')
         else:
             self.entry_message.set(self.default_count_message)
-            self.player_count_display.config(bg='gray80')
+            self.player_count_display.config(bg='gray90')
         
 
     def end_point(self):
         """At the end of the point, log all the data and clear the roster for the next point"""
 
+        # record who was playing
+        active_players = []
+
         # clear the checkboxes
-        for player_box in self.check_values:
-            self.check_values[player_box].set(0)
+        for player in self.roster_widgets:
+            if self.roster_widgets[player]["checkbox_value"].get() == 1:
+                active_players.append(player)
+                self.roster_widgets[player]["checkbox_value"].set(0)
+        
         # reset the checkbox count
-        self.update_player_total()
+        self.player_count.set(0)
+
+        # send the list of active players to the game class
+        self.parent.games[self.parent.active_game].log_active_players(active_players)
 
         # switch the possession indicator
         self.switch_possession_text()
@@ -207,6 +216,7 @@ class LiveGame():
     def end_game(self):
         """Ends the live game"""
 
+        # close the live game tab
         self.parent.live_game_active=False
         self.live_page.destroy()
 

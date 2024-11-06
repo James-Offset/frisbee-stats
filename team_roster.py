@@ -12,6 +12,10 @@ import tkinter as tk
 from tkinter import ttk
 
 
+"""My Code"""
+from player import Player
+
+
 
 class Team():
     """A class to manage all the functions relating to the team roster"""
@@ -60,9 +64,7 @@ class Team():
         self.number_of_players += 1
 
         # create a new class
-        self.roster[player_name] = {
-            "Number" : player_number,
-        }
+        self.roster[player_name] = Player(player_number)
 
         #!! consider re-drawing entire grid in alphabetical order
 
