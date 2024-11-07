@@ -53,6 +53,7 @@ No. O / DG
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
 
 class FrisbeeGame():
@@ -75,51 +76,77 @@ class FrisbeeGame():
     def _configure_table(self):
         """Sets up the table that presents the game summary on the game tab"""
 
-        # configure 6 columns
+        # assign column numbers
+        self.pt_n = 0
+        self.tc_n = 2
+        self.tw_n = 3
+        self.result_n = 5
+        self.score_n = 6
+        self.button_n = 7
+
+        self.s1_n = 1
+        self.s2_n = 4
+
+        # configure 8 columns
         self.pt_col = {}
-        self.game_page.columnconfigure(0, weight=1)
-        self.start_col = {}
-        self.game_page.columnconfigure(1, weight=2)
+        self.game_page.columnconfigure(self.pt_n, weight=1)
         self.conced_col = {}
-        self.game_page.columnconfigure(2, weight=2)
+        self.game_page.columnconfigure(self.tc_n, weight=2)
         self.win_col = {}
-        self.game_page.columnconfigure(3, weight=2)
+        self.game_page.columnconfigure(self.tw_n, weight=2)
         self.result_col = {}
-        self.game_page.columnconfigure(4, weight=3)
+        self.game_page.columnconfigure(self.result_n, weight=3)
         self.score_col = {}
-        self.game_page.columnconfigure(5, weight=3)
+        self.game_page.columnconfigure(self.score_n, weight=3)
+        self.players_button_col = {}
+        self.game_page.columnconfigure(self.button_n, weight=1)
+
+        self.s1_col = {}
+        self.game_page.columnconfigure(self.s1_n, weight=1)
+        self.s2_col = {}
+        self.game_page.columnconfigure(self.s2_n, weight=1)
+
 
         # add heading labels
         self.pt_num_head = tk.Label(self.game_page, text="Pt", font=('Arial', 18))
-        self.pt_num_head.grid(row=0 , column = 0, sticky=tk.W + tk.E)
-
-        self.start_head = tk.Label(self.game_page, text="Start", font=('Arial', 18))
-        self.start_head.grid(row=0 , column = 1, sticky=tk.W + tk.E)
+        self.pt_num_head.grid(row=0 , column = self.pt_n, sticky=tk.W + tk.E)
 
         self.concede_head = tk.Label(self.game_page, text="TC", font=('Arial', 18))
-        self.concede_head.grid(row=0 , column = 2, sticky=tk.W + tk.E)
+        self.concede_head.grid(row=0 , column = self.tc_n, sticky=tk.W + tk.E)
 
         self.win_head = tk.Label(self.game_page, text="TW", font=('Arial', 18))
-        self.win_head.grid(row=0 , column = 3, sticky=tk.W + tk.E)
+        self.win_head.grid(row=0 , column = self.tw_n, sticky=tk.W + tk.E)
 
         self.result_head = tk.Label(self.game_page, text="Result", font=('Arial', 18))
-        self.result_head.grid(row=0 , column = 4, sticky=tk.W + tk.E)
+        self.result_head.grid(row=0 , column = self.result_n, sticky=tk.W + tk.E)
 
         self.score_head = tk.Label(self.game_page, text="Score", font=('Arial', 18))
-        self.score_head.grid(row=0 , column = 5, sticky=tk.W + tk.E)
+        self.score_head.grid(row=0 , column = self.score_n, sticky=tk.W + tk.E)
 
+        # add column separators
+        self.s1 = ttk.Separator(self.game_page, orient='vertical')
+        self.s1.grid(row=0, column=self.s1_n, sticky="ns", padx=4)
 
-    def crunch_data_from_import(self, list_of_turns):
+        self.s2 = ttk.Separator(self.game_page, orient='vertical')
+        self.s2.grid(row=0, column=self.s2_n, sticky="ns", padx=4)
+
+        # horizontal Separator
+        s0 = ttk.Separator(self.game_page, orient='horizontal')
+        s0.grid(row=1, column = 0, sticky=tk.W + tk.E, columnspan=8 , pady=5)
+
+    def crunch_data_from_import(self, list_of_turns, list_of_active_players):
         """When using imported data, this function calls other functions to calculate the results"""
 
-        self.list_of_turns = list_of_turns
-
         # run the loop for each point to fill each category
-        for number_of_turns in self.list_of_turns:
-            none = self.evaluate_point(number_of_turns)
+        for i in range(len(list_of_turns)):
+            none = self.evaluate_point(list_of_turns[i], list_of_active_players[i])
 
     def _initiate_game_state(self):
         """Looks at the number of turns and calcualtes the points won/lost and turnovers won/lost per point"""
+        
+        # record who playes each point
+        self.point_lineups = {}
+
         self.team_performance = {
             "Hold or Break" : [],
             "Who Scored" : [],
@@ -144,68 +171,109 @@ class FrisbeeGame():
         self.live_opp_score = 0
 
 
-    def evaluate_point(self, number_of_turns):
+    def evaluate_point(self, number_of_turns, list_of_active_players):
         """Takes the information from a completed point and updates necessary variables"""
-
+        
         # increment point number
         self.point_number += 1
+
+        # copy out needed info
+        self.number_of_turns = number_of_turns
+        self.point_lineups[self.point_number] = list_of_active_players
+
+        # get the basic stats
+        self._work_out_team_performance()
+
+        # update the game page
+        self._update_game_display_tab()
+        
+        # reset the modifier for who starts the next point on defense
+        self.o_start_indicator = 1 - (self.team_point * 2)
+
+        self._update_player_stats()
+
+        # feed the score text value back to the live game tab
+        return self.live_score_text
+
+
+    def _work_out_team_performance(self):
+        """Uses the number of turns to work out the team stats"""
         
         # work out whether the point was a hold or a break
-        hold_or_break = 1 - 2 * (number_of_turns % 2) # hold = 1, break = -1
+        self.hold_or_break = 1 - 2 * (self.number_of_turns % 2) # hold = 1, break = -1
 
         # update our score accordingly
-        our_score = (self.o_start_indicator * hold_or_break + 1 ) / 2
-        self.team_performance["Team Score"].append(our_score)
+        self.team_point = (self.o_start_indicator * self.hold_or_break + 1 ) / 2
+        self.team_performance["Team Score"].append(self.team_point)
 
         # work out how many turnovers we won
-        turnovers_won = int((number_of_turns /2) + ((hold_or_break - 1) * self.o_start_indicator) / 4)
-        self.team_performance["Disc Won"].append(turnovers_won)
-        turnovers_conceded = int(number_of_turns - turnovers_won)
-        self.team_performance["Disc Lost"].append(turnovers_conceded)
+        self.turnovers_won = int((self.number_of_turns /2) + ((self.hold_or_break - 1) * self.o_start_indicator) / 4)
+        self.team_performance["Disc Won"].append(self.turnovers_won)
+        self.turnovers_conceded = int(self.number_of_turns - self.turnovers_won)
+        self.team_performance["Disc Lost"].append(self.turnovers_conceded)
 
-        # update the display table
+    def _update_game_display_tab(self):
+        """adds a nw row to the table on the game tab"""
+
+        # point number
         self.pt_col[self.point_number] = tk.Label(self.game_page, text=self.point_number, font=('Arial', 16))
-        self.pt_col[self.point_number].grid(row=self.point_number, column=0, sticky=tk.W + tk.E)
+        self.pt_col[self.point_number].grid(row=self.point_number+1, column=self.pt_n, sticky=tk.W + tk.E)
 
-        if self.o_start_indicator == 1:
-            start_text = "Team"
-        else:
-            start_text = "Opp"
-        self.start_col[self.point_number] = tk.Label(self.game_page, text=start_text, font=('Arial', 16))
-        self.start_col[self.point_number].grid(row=self.point_number, column=1, sticky=tk.W + tk.E)
+        # number of turnovers conceded
+        self.conced_col[self.point_number] = tk.Label(self.game_page, text=self.turnovers_conceded, font=('Arial', 16))
+        self.conced_col[self.point_number].grid(row=self.point_number+1, column=self.tc_n, sticky=tk.W + tk.E)
 
-        self.conced_col[self.point_number] = tk.Label(self.game_page, text=turnovers_conceded, font=('Arial', 16))
-        self.conced_col[self.point_number].grid(row=self.point_number, column=2, sticky=tk.W + tk.E)
+        # number of turnovers won
+        self.win_col[self.point_number] = tk.Label(self.game_page, text=self.turnovers_won, font=('Arial', 16))
+        self.win_col[self.point_number].grid(row=self.point_number+1, column=self.tw_n, sticky=tk.W + tk.E)
 
-        self.win_col[self.point_number] = tk.Label(self.game_page, text=turnovers_won, font=('Arial', 16))
-        self.win_col[self.point_number].grid(row=self.point_number, column=3, sticky=tk.W + tk.E)
-
-        if our_score == 1:
+        # summary of who won the point
+        if self.team_point == 1:
             result_text_1 = "Team "
             self.live_team_score+=1
         else:
             result_text_1 = "Opp "
             self.live_opp_score+=1
-        if hold_or_break == 1:
+        if self.hold_or_break == 1:
             result_text_2 = "hold"
         else:
             result_text_2 = "break"
         self.result_col[self.point_number] = tk.Label(self.game_page, text=result_text_1+result_text_2, font=('Arial', 16))
-        self.result_col[self.point_number].grid(row=self.point_number, column=4, sticky=tk.W + tk.E)
+        self.result_col[self.point_number].grid(row=self.point_number+1, column=self.result_n, sticky=tk.W + tk.E)
 
+        # live score update
         score_text = str(self.live_team_score) + " - " + str(self.live_opp_score)
         self.score_col[self.point_number] = tk.Label(self.game_page, text=score_text, font=('Arial', 16))
-        self.score_col[self.point_number].grid(row=self.point_number, column=5, sticky=tk.W + tk.E)
-
-        # reset the modifier for who starts the next point on defense
-        self.o_start_indicator = 1 - (our_score * 2)
+        self.score_col[self.point_number].grid(row=self.point_number+1, column=self.score_n, sticky=tk.W + tk.E)
 
         # create a text representation of the live score for the live tab
-        live_score_text = "Score: " + str(self.live_team_score) + " - " + str(self.live_opp_score)
+        self.live_score_text = "Score: " + str(self.live_team_score) + " - " + str(self.live_opp_score)
+        
+        # button to show who played that point
+        self.players_button_col[self.point_number] = tk.Button(self.game_page, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
+        self.players_button_col[self.point_number].grid(row=self.point_number+1, column=self.button_n, sticky=tk.W + tk.E, pady=2)
 
-        return live_score_text
-            
-    def log_active_players(self, list_of_active_players):
-        """Do something to record which players were on the pitch for a point"""
+        # redraw separators
+        self.s1.grid(row=0, rowspan=self.point_number+2, column=self.s1_n, sticky="ns", padx=4)
+        self.s2.grid(row=0, rowspan=self.point_number+2, column=self.s2_n, sticky="ns", padx=4)
 
-        self.team_performance["Players on Pitch"].append(list_of_active_players)
+    def show_players_on_pitch(self, reference_point_number):
+        """Brings up a message box listing the players who played that point"""
+
+        messagebox_title = "Point " + str(reference_point_number) + " line-up"
+        player_string = ""
+        for player in self.point_lineups[reference_point_number]:
+            player_string = player_string + player + " // "
+        messagebox.showinfo(title=messagebox_title, message=player_string)
+        
+
+    def _update_player_stats(self):
+        """Feeds relevant stats back to each player"""
+
+        for player in self.parent.team.roster:
+
+            # if the player was on that point
+            if player in self.point_lineups[self.point_number]:
+
+                # increment points played by one
+                self.parent.team.roster[player].games[self.parent.active_game]["Number of Points Played"] += 1

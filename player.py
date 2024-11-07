@@ -22,5 +22,12 @@ class Player():
             "Turns Lost" : 0
         }
 
-    def create_game_dictionary(self):
-        pass
+        # create a dictionary to store data for each game played
+        self.games = {}
+
+    def create_game_dictionary(self, name_of_game):
+        """When we start a new game, create a new dictionary to keep the stats for that game in"""
+
+        self.games[name_of_game] = {
+            "Number of Points Played" : 0
+        }

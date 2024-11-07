@@ -197,14 +197,11 @@ class LiveGame():
         # reset the checkbox count
         self.player_count.set(0)
 
-        # send the list of active players to the game class
-        self.parent.games[self.parent.active_game].log_active_players(active_players)
-
         # switch the possession indicator
         self.switch_possession_text()
 
         # call the end point function in the active game
-        new_score_text = self.parent.games[self.parent.active_game].evaluate_point(self.turnover_count)
+        new_score_text = self.parent.games[self.parent.active_game].evaluate_point(self.turnover_count, active_players)
 
         # update the live score label
         self.score_readout.set(new_score_text)

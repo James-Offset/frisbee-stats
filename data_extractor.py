@@ -111,6 +111,7 @@ class DataExtractor():
             "Opponent" : game_opponent,
             "Starting on Defence" : team_start_on_defence,
             "Turns per Point" : [],
+            "Active Players" : [],
         }
 
         # add an entry for each player to capture whether they were playing that point
@@ -139,15 +140,19 @@ class DataExtractor():
 
                 # for each player, log if they were on that point
                 i = 0
+                active_players = []
                 for player in players_on_sheet:
                     player_presence = sheet.cell(row=row, column=8+i).value
 
                     if player_presence == 1:
                         # player was on the pitch
                         self.raw_game_data[game_name][player].append(1)
+                        active_players.append(player)
                     else:
                         # player was not on pitch
                         self.raw_game_data[game_name][player].append(0)
                     i += 1
-                #!! add in some data check at some point to see if we had the right number of players on for that point
+                
+                # update the raw data dict with the list of active players
+                self.raw_game_data[game_name]["Active Players"].append(active_players)
 

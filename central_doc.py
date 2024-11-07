@@ -134,11 +134,11 @@ class MainGUI():
             self.start_new_game()
 
             # find the set of raw data that applies to that game
-            for game_data in self.raw_game_data:
-                if self.active_game in game_data:
+            for name_of_considered_game in self.raw_game_data:
+                if self.active_game in name_of_considered_game:
                     break
             
-            self.games[self.active_game].crunch_data_from_import(self.raw_game_data[game_data]['Turns per Point'])
+            self.games[self.active_game].crunch_data_from_import(self.raw_game_data[name_of_considered_game]['Turns per Point'], self.raw_game_data[name_of_considered_game]["Active Players"])
             self.live_game.end_game()
 
 
@@ -164,7 +164,7 @@ class MainGUI():
 
             # Create new player records
             for player in self.team.roster:
-                self.team.roster[player].create_game_dictionary()
+                self.team.roster[player].create_game_dictionary(self.active_game)
 
 
 # call the main code
