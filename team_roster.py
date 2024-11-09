@@ -27,6 +27,7 @@ class Team():
         self.parent = parent
 
         # create a dictionary to hold the player classes
+        self.number_of_players = 0
         self.roster={}
 
         # put a roster page on the main GUI
@@ -62,20 +63,12 @@ class Team():
         self.pp_h = tk.Label(self.roster_page, text="PP", font=('Arial', 18))
         self.pp_h.grid(row=0 , column = 3, sticky=tk.W + tk.E, pady=10)
 
-        self.pc_h = tk.Label(self.roster_page, text="PC", font=('Arial', 18))
+        self.pc_h = tk.Label(self.roster_page, text="OC", font=('Arial', 18))
         self.pc_h.grid(row=0 , column = 4, sticky=tk.W + tk.E, pady=10)
 
-        self.tc_h = tk.Label(self.roster_page, text="TC", font=('Arial', 18))
+        self.tc_h = tk.Label(self.roster_page, text="DC", font=('Arial', 18))
         self.tc_h.grid(row=0 , column = 5, sticky=tk.W + tk.E, pady=10)
-
-        # create a roster table
-        self.name_col = {}
-        self.number_col = {}
-        self.s_col = {}
-        self.pp_col = {}
-        self.pc_col = {}
-        self.tc_col = {}
-        self.number_of_players = 0
+        
 
     def new_player_entry(self, player_name, player_number):
         """Creates a class to for a new player"""
@@ -85,16 +78,20 @@ class Team():
         self.number_of_players += 1
 
         # create a new class
-        self.roster[player_name] = Player(player_number)
+        self.roster[player_name] = Player(self, player_number)
 
         #!! consider re-drawing entire grid in alphabetical order
 
         # add the new player to the grid
-        self.name_col[player_name] = tk.Label(self.roster_page, text=player_name, font=('Arial', 18))
-        self.name_col[player_name].grid(row=self.number_of_players, column=0, sticky=tk.W + tk.E)
+        column_number = 0
+        for element in self.roster[player_name].gui_elements:
+            self.roster[player_name].gui_elements[element].grid(row=self.number_of_players, column=column_number, sticky='ew')
+            column_number += 1
 
-        self.number_col[player_name] = tk.Label(self.roster_page, text=player_number, font=('Arial', 18))
-        self.number_col[player_name].grid(row=self.number_of_players, column=1, sticky=tk.W + tk.E)
+        self.roster[player_name].gui_elements["name"].config(text=player_name)
+        self.roster[player_name].gui_elements["number"].config(text=player_number)
+        self.roster[player_name].gui_elements["separator placeholder"].config(text="") #!! just remove this element, or stop it being made
 
-        self.s1.grid(row=0, rowspan=self.number_of_players+1, column=2, sticky="ns", padx=3)
+        # redraw separator
+        self.s1.grid(row=0, rowspan=self.number_of_players, column=2, sticky="ns", padx=3)
 

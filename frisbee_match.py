@@ -187,7 +187,7 @@ class FrisbeeGame():
         # update the game page
         self._update_game_display_tab()
         
-        # reset the modifier for who starts the next point on defense
+        # reset the modifier for who starts the next point on defence
         self.o_start_indicator = 1 - (self.team_point * 2)
 
         self._update_player_stats()
@@ -211,6 +211,20 @@ class FrisbeeGame():
         self.team_performance["Disc Won"].append(self.turnovers_won)
         self.turnovers_conceded = int(self.number_of_turns - self.turnovers_won)
         self.team_performance["Disc Lost"].append(self.turnovers_conceded)
+        
+        # player stats list
+        self.stats_list = {
+            "number of points played" : 1,
+            "possessions played" : self.number_of_turns + 1,
+            "offence possessions" : self.turnovers_conceded + self.team_point,
+            "defence possessions" : self.turnovers_won + (1-self.team_point),
+            "turnovers conceded" : self.turnovers_conceded,
+            "turnovers won" : self.turnovers_won,
+        }
+
+        # save these in case we need them later
+        self.extra_stats = {
+        }
 
     def _update_game_display_tab(self):
         """adds a nw row to the table on the game tab"""
@@ -275,5 +289,15 @@ class FrisbeeGame():
             # if the player was on that point
             if player in self.point_lineups[self.point_number]:
 
+                #!! refactor this into the player class. pass in stats list dictionary.
+                # create function that can be called to update high level stats and in-game stats
+                
                 # increment points played by one
-                self.parent.team.roster[player].games[self.parent.active_game]["Number of Points Played"] += 1
+                #!! self.parent.team.roster[player].games[self.parent.active_game]["number of points played"] += 1
+
+                for game_event in self.stats_list:
+                    self.parent.team.roster[player].stats_count[game_event] += self.stats_list[game_event]
+
+                # trigger player class to calculate new scores
+                self.parent.team.roster[player].calculate_new_scores()
+
