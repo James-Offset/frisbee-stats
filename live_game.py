@@ -196,6 +196,8 @@ class LiveGame():
         
         # reset the checkbox count
         self.player_count.set(0)
+        self.entry_message.set(self.default_count_message)
+        self.player_count_display.config(bg='gray90')
 
         # switch the possession indicator
         self.switch_possession_text()

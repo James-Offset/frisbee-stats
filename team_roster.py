@@ -40,20 +40,41 @@ class Team():
         self.roster_page.pack()
         self.parent.notebook.add(self.roster_page, text="Team Roster")
 
-        # configure 2 columns
+        # configure 7 columns
         self.roster_page.columnconfigure(0, weight=3)
         self.roster_page.columnconfigure(1, weight=1)
+        self.roster_page.columnconfigure(2, weight=1)
+        self.roster_page.columnconfigure(3, weight=1)
+        self.roster_page.columnconfigure(4, weight=1)
+        self.roster_page.columnconfigure(5, weight=1)
+        self.roster_page.columnconfigure(6, weight=1)
 
         # add heading labels
-        self.r_head_1 = tk.Label(self.roster_page, text="Player Name", font=('Arial', 18))
-        self.r_head_1.grid(row=0 , column = 0, sticky=tk.W + tk.E, pady=10)
+        self.name_h = tk.Label(self.roster_page, text="Player Name", font=('Arial', 18))
+        self.name_h.grid(row=0 , column = 0, sticky=tk.W + tk.E, pady=10)
 
-        self.r_head_2 = tk.Label(self.roster_page, text="Player No.", font=('Arial', 18))
-        self.r_head_2.grid(row=0 , column = 1, sticky=tk.W + tk.E)
+        self.number_h = tk.Label(self.roster_page, text="Player No.", font=('Arial', 18))
+        self.number_h.grid(row=0 , column = 1, sticky=tk.W + tk.E)
+
+        self.s1 = ttk.Separator(self.roster_page, orient="vertical")
+        self.s1.grid(row=0 , column = 2, sticky='ns', padx=3)
+
+        self.pp_h = tk.Label(self.roster_page, text="PP", font=('Arial', 18))
+        self.pp_h.grid(row=0 , column = 3, sticky=tk.W + tk.E, pady=10)
+
+        self.pc_h = tk.Label(self.roster_page, text="PC", font=('Arial', 18))
+        self.pc_h.grid(row=0 , column = 4, sticky=tk.W + tk.E, pady=10)
+
+        self.tc_h = tk.Label(self.roster_page, text="TC", font=('Arial', 18))
+        self.tc_h.grid(row=0 , column = 5, sticky=tk.W + tk.E, pady=10)
 
         # create a roster table
         self.name_col = {}
         self.number_col = {}
+        self.s_col = {}
+        self.pp_col = {}
+        self.pc_col = {}
+        self.tc_col = {}
         self.number_of_players = 0
 
     def new_player_entry(self, player_name, player_number):
@@ -74,4 +95,6 @@ class Team():
 
         self.number_col[player_name] = tk.Label(self.roster_page, text=player_number, font=('Arial', 18))
         self.number_col[player_name].grid(row=self.number_of_players, column=1, sticky=tk.W + tk.E)
+
+        self.s1.grid(row=0, rowspan=self.number_of_players+1, column=2, sticky="ns", padx=3)
 
