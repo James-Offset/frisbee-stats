@@ -27,71 +27,88 @@ class Team():
         self.parent = parent
 
         # create a dictionary to hold the player classes
-        self.number_of_players = 0
+        self.display_row_number = 0
         self.roster={}
 
-        # put a roster page on the main GUI
-        self.build_roster_page()
+        # create a dictionary to hold the display tabs for player stats
+        self.player_stats_pages = {}
 
-    def build_roster_page(self):
-        """Creates the basic grid for the roster page"""
+        # Get tournament name !!"MIR 2017"
+        tournament_name = "tournament"
+
+        # put a roster page on the main GUI for the full tournaments stats
+        self.build_player_stats_page(tournament_name)
+
+    def build_player_stats_page(self, tab_name):
+        """Creates the basic grid for the roster page, not filled in"""
 
         # create the new tab
-        self.roster_page = tk.Frame(self.parent.notebook)
-        self.roster_page.pack()
-        self.parent.notebook.add(self.roster_page, text="Team Roster")
+        self.player_stats_pages[tab_name] = tk.Frame(self.parent.notebook)
+        self.player_stats_pages[tab_name].pack()
+        tab_label = tab_name[:6] + " Stats"
+        self.parent.notebook.add(self.player_stats_pages[tab_name], text=tab_label)
 
-        # configure 7 columns
-        self.roster_page.columnconfigure(0, weight=3)
-        self.roster_page.columnconfigure(1, weight=1)
-        self.roster_page.columnconfigure(2, weight=1)
-        self.roster_page.columnconfigure(3, weight=1)
-        self.roster_page.columnconfigure(4, weight=1)
-        self.roster_page.columnconfigure(5, weight=1)
-        self.roster_page.columnconfigure(6, weight=1)
+        # create a dictionary to hold the details of the GUI columns
+        self.gui_columns = {
+            "heading text" : [
+                "Player Name", 
+                "#", 
+                "separator1", 
+                "PP", 
+                "OP",
+                "OC",
+                "DP",
+                "DC",
+                ],
+            "column weighting" : [3, 1, 1, 1, 1, 1, 1, 1,],
+            "label elements" : {}
+        }
 
-        # add heading labels
-        self.name_h = tk.Label(self.roster_page, text="Player Name", font=('Arial', 18))
-        self.name_h.grid(row=0 , column = 0, sticky=tk.W + tk.E, pady=10)
+        # neaten this later !!
+        self.separator_column_number = 2
 
-        self.number_h = tk.Label(self.roster_page, text="Player No.", font=('Arial', 18))
-        self.number_h.grid(row=0 , column = 1, sticky=tk.W + tk.E)
-
-        self.s1 = ttk.Separator(self.roster_page, orient="vertical")
-        self.s1.grid(row=0 , column = 2, sticky='ns', padx=3)
-
-        self.pp_h = tk.Label(self.roster_page, text="PP", font=('Arial', 18))
-        self.pp_h.grid(row=0 , column = 3, sticky=tk.W + tk.E, pady=10)
-
-        self.pc_h = tk.Label(self.roster_page, text="OC", font=('Arial', 18))
-        self.pc_h.grid(row=0 , column = 4, sticky=tk.W + tk.E, pady=10)
-
-        self.tc_h = tk.Label(self.roster_page, text="DC", font=('Arial', 18))
-        self.tc_h.grid(row=0 , column = 5, sticky=tk.W + tk.E, pady=10)
+        column_number=0
+        for column in self.gui_columns["heading text"]:
+            # create a column
+            self.player_stats_pages[tab_name].columnconfigure(column_number, weight=self.gui_columns["column weighting"][column_number])
         
+            # add heading labels
+            if "separator" in column:
+                self.gui_columns["label elements"][column] = ttk.Separator(self.player_stats_pages[tab_name], orient="vertical")
+                self.gui_columns["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=2)
+            else:
+                self.gui_columns["label elements"][column] = tk.Label(self.player_stats_pages[tab_name], text=self.gui_columns["heading text"][column_number], font=('Arial', 18))
+                self.gui_columns["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
+
+            column_number += 1
 
     def new_player_entry(self, player_name, player_number):
         """Creates a class to for a new player"""
 
         #!! add data validation
         
-        self.number_of_players += 1
+        self.display_row_number += 1
 
         # create a new class
-        self.roster[player_name] = Player(self, player_number)
+        self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number)
 
-        #!! consider re-drawing entire grid in alphabetical order
+        # add the player to the existing stats pages on the GUI
+        for tab_name in self.player_stats_pages:
+            self.roster[player_name].prepare_to_receive_data(tab_name)
+            
+            # redraw separator
+            self.gui_columns["label elements"]["separator1"].grid(row=0, rowspan=self.display_row_number+1, column=self.separator_column_number, sticky="ns", padx=3)
 
-        # add the new player to the grid
-        column_number = 0
-        for element in self.roster[player_name].gui_elements:
-            self.roster[player_name].gui_elements[element].grid(row=self.number_of_players, column=column_number, sticky='ew')
-            column_number += 1
 
-        self.roster[player_name].gui_elements["name"].config(text=player_name)
-        self.roster[player_name].gui_elements["number"].config(text=player_number)
-        self.roster[player_name].gui_elements["separator placeholder"].config(text="") #!! just remove this element, or stop it being made
+    def add_players_to_stats_page(self, tab_name):
+        """For a new stats page, we need to add a row for each player already on the roster"""
 
+        # add the player information to the new data tab
+        for player in self.roster:
+            self.roster[player].prepare_to_receive_data(tab_name)
+        
         # redraw separator
-        self.s1.grid(row=0, rowspan=self.number_of_players, column=2, sticky="ns", padx=3)
+        self.gui_columns["label elements"]["separator1"].grid(row=0, rowspan=self.display_row_number+1, column=self.separator_column_number, sticky="ns", padx=3)
 
+
+        

@@ -76,63 +76,52 @@ class FrisbeeGame():
     def _configure_table(self):
         """Sets up the table that presents the game summary on the game tab"""
 
-        # assign column numbers
-        self.pt_n = 0
-        self.tc_n = 2
-        self.tw_n = 3
-        self.result_n = 5
-        self.score_n = 6
-        self.button_n = 7
+        # create a dictionary to hold the details of the GUI columns
+        self.gui_grid_dict = {
+            "heading text" : [
+                "P", 
+                "separator1", 
+                "TC", 
+                "TW", 
+                "separator2",
+                "Result",
+                "Score",
+                "button",
+                ],
+            "column weighting" : [1, 2, 1, 2, 3, 1, 3, 1],
+            "label elements" : {}
+        } #>>>> Repeat this in the point update method
 
-        self.s1_n = 1
-        self.s2_n = 4
+        # neaten this later !!
+        self.separator_column_number = 1
 
-        # configure 8 columns
-        self.pt_col = {}
-        self.game_page.columnconfigure(self.pt_n, weight=1)
-        self.conced_col = {}
-        self.game_page.columnconfigure(self.tc_n, weight=2)
-        self.win_col = {}
-        self.game_page.columnconfigure(self.tw_n, weight=2)
-        self.result_col = {}
-        self.game_page.columnconfigure(self.result_n, weight=3)
-        self.score_col = {}
-        self.game_page.columnconfigure(self.score_n, weight=3)
-        self.players_button_col = {}
-        self.game_page.columnconfigure(self.button_n, weight=1)
+        column_number=0
+        for column in self.gui_grid_dict["heading text"]:
+            # create a column
+            self.game_page.columnconfigure(column_number, weight=self.gui_grid_dict["column weighting"][column_number])
+        
+            # add heading labels
+            if "separator" in column:
+                self.gui_grid_dict["label elements"][column] = ttk.Separator(self.game_page, orient="vertical")
+                self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=2)
+            else:
+                self.gui_grid_dict["label elements"][column] = tk.Label(self.game_page, text=self.gui_grid_dict["heading text"][column_number], font=('Arial', 18))
+                self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=5)
 
-        self.s1_col = {}
-        self.game_page.columnconfigure(self.s1_n, weight=1)
-        self.s2_col = {}
-        self.game_page.columnconfigure(self.s2_n, weight=1)
+            column_number += 1
 
-
-        # add heading labels
-        self.pt_num_head = tk.Label(self.game_page, text="Pt", font=('Arial', 18))
-        self.pt_num_head.grid(row=0 , column = self.pt_n, sticky=tk.W + tk.E)
-
-        self.concede_head = tk.Label(self.game_page, text="TC", font=('Arial', 18))
-        self.concede_head.grid(row=0 , column = self.tc_n, sticky=tk.W + tk.E)
-
-        self.win_head = tk.Label(self.game_page, text="TW", font=('Arial', 18))
-        self.win_head.grid(row=0 , column = self.tw_n, sticky=tk.W + tk.E)
-
-        self.result_head = tk.Label(self.game_page, text="Result", font=('Arial', 18))
-        self.result_head.grid(row=0 , column = self.result_n, sticky=tk.W + tk.E)
-
-        self.score_head = tk.Label(self.game_page, text="Score", font=('Arial', 18))
-        self.score_head.grid(row=0 , column = self.score_n, sticky=tk.W + tk.E)
-
-        # add column separators
-        self.s1 = ttk.Separator(self.game_page, orient='vertical')
-        self.s1.grid(row=0, column=self.s1_n, sticky="ns", padx=4)
-
-        self.s2 = ttk.Separator(self.game_page, orient='vertical')
-        self.s2.grid(row=0, column=self.s2_n, sticky="ns", padx=4)
+        # remove the button heading text
+        self.gui_grid_dict["label elements"]["button"].config(text="")
 
         # horizontal Separator
         s0 = ttk.Separator(self.game_page, orient='horizontal')
         s0.grid(row=1, column = 0, sticky=tk.W + tk.E, columnspan=8 , pady=5)
+
+        # create a dictionary to hold the gui elements for each point, which will have its own row of the table
+        self.point_gui_rows = {}
+
+        # set the starting row number
+        self.row_number = 1
 
     def crunch_data_from_import(self, list_of_turns, list_of_active_players):
         """When using imported data, this function calls other functions to calculate the results"""
@@ -213,11 +202,11 @@ class FrisbeeGame():
         self.team_performance["Disc Lost"].append(self.turnovers_conceded)
         
         # player stats list
-        self.stats_list = {
+        self.point_stats_list = {
             "number of points played" : 1,
-            "possessions played" : self.number_of_turns + 1,
-            "offence possessions" : self.turnovers_conceded + self.team_point,
-            "defence possessions" : self.turnovers_won + (1-self.team_point),
+            "number of possessions played" : self.number_of_turns + 1,
+            "no. offence possessions" : int(self.turnovers_conceded + self.team_point),
+            "no. defence possessions" : int(self.turnovers_won + (1-self.team_point)),
             "turnovers conceded" : self.turnovers_conceded,
             "turnovers won" : self.turnovers_won,
         }
@@ -227,20 +216,16 @@ class FrisbeeGame():
         }
 
     def _update_game_display_tab(self):
-        """adds a nw row to the table on the game tab"""
+        """adds a new row to the table on the game tab"""
 
-        # point number
-        self.pt_col[self.point_number] = tk.Label(self.game_page, text=self.point_number, font=('Arial', 16))
-        self.pt_col[self.point_number].grid(row=self.point_number+1, column=self.pt_n, sticky=tk.W + tk.E)
+        # increment row number
+        self.row_number += 1
+        self.row_number_ref = str(self.row_number)
 
-        # number of turnovers conceded
-        self.conced_col[self.point_number] = tk.Label(self.game_page, text=self.turnovers_conceded, font=('Arial', 16))
-        self.conced_col[self.point_number].grid(row=self.point_number+1, column=self.tc_n, sticky=tk.W + tk.E)
+        # create a new sub-dictionary to hold the gui elements for that row
+        self.point_gui_rows[self.row_number_ref] = {}
 
-        # number of turnovers won
-        self.win_col[self.point_number] = tk.Label(self.game_page, text=self.turnovers_won, font=('Arial', 16))
-        self.win_col[self.point_number].grid(row=self.point_number+1, column=self.tw_n, sticky=tk.W + tk.E)
-
+        # work out non-trivial text elements:
         # summary of who won the point
         if self.team_point == 1:
             result_text_1 = "Team "
@@ -252,24 +237,42 @@ class FrisbeeGame():
             result_text_2 = "hold"
         else:
             result_text_2 = "break"
-        self.result_col[self.point_number] = tk.Label(self.game_page, text=result_text_1+result_text_2, font=('Arial', 16))
-        self.result_col[self.point_number].grid(row=self.point_number+1, column=self.result_n, sticky=tk.W + tk.E)
 
         # live score update
         score_text = str(self.live_team_score) + " - " + str(self.live_opp_score)
-        self.score_col[self.point_number] = tk.Label(self.game_page, text=score_text, font=('Arial', 16))
-        self.score_col[self.point_number].grid(row=self.point_number+1, column=self.score_n, sticky=tk.W + tk.E)
 
         # create a text representation of the live score for the live tab
         self.live_score_text = "Score: " + str(self.live_team_score) + " - " + str(self.live_opp_score)
-        
-        # button to show who played that point
-        self.players_button_col[self.point_number] = tk.Button(self.game_page, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
-        self.players_button_col[self.point_number].grid(row=self.point_number+1, column=self.button_n, sticky=tk.W + tk.E, pady=2)
 
-        # redraw separators
-        self.s1.grid(row=0, rowspan=self.point_number+2, column=self.s1_n, sticky="ns", padx=4)
-        self.s2.grid(row=0, rowspan=self.point_number+2, column=self.s2_n, sticky="ns", padx=4)
+        # update text entries
+        text_entries = {
+            "P" : self.point_number,
+            "separator1" : None,
+            "TC" : self.turnovers_conceded,
+            "TW" : self.turnovers_won,
+            "separator2": None,
+            "Result" : result_text_1+result_text_2,
+            "Score" : score_text,
+            "button" : None,
+        } # <<<< copied from the table set up function
+
+        # for each data point that will need to be shown, create a label to hold it and add it to the grid. (both fixed and variable data)
+        column_number = 0        
+        for element in self.gui_grid_dict["heading text"]:
+            if element == "button":
+                # add a button
+                self.point_gui_rows[self.row_number_ref][element] = tk.Button(self.game_page, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
+                self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky=tk.W + tk.E, pady=2)
+            elif "separator" in element:
+                # redraw the separator from the top
+                self.gui_grid_dict["label elements"][element].grid(row=0, rowspan=self.row_number+1, column=column_number, sticky="ns", padx=3)
+            else:
+                # add a new label
+                self.point_gui_rows[self.row_number_ref][element] = tk.Label(self.game_page, text=text_entries[element], font=('Arial', 16))
+                self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky='ew')
+
+            # increment column number
+            column_number += 1
 
     def show_players_on_pitch(self, reference_point_number):
         """Brings up a message box listing the players who played that point"""
@@ -289,15 +292,7 @@ class FrisbeeGame():
             # if the player was on that point
             if player in self.point_lineups[self.point_number]:
 
-                #!! refactor this into the player class. pass in stats list dictionary.
-                # create function that can be called to update high level stats and in-game stats
-                
-                # increment points played by one
-                #!! self.parent.team.roster[player].games[self.parent.active_game]["number of points played"] += 1
+                # call the function for that player
+                self.parent.team.roster[player].update_point_data(self.point_stats_list)
 
-                for game_event in self.stats_list:
-                    self.parent.team.roster[player].stats_count[game_event] += self.stats_list[game_event]
-
-                # trigger player class to calculate new scores
-                self.parent.team.roster[player].calculate_new_scores()
 

@@ -158,13 +158,15 @@ class MainGUI():
             # make a note of what the active game is called
             self.active_game = game_class_name
 
+            # create a game team stats tab
+            self.team.build_player_stats_page(game_class_name)
+
+            # add the players to the new stats page
+            self.team.add_players_to_stats_page(game_class_name)
+
             # create a live game tab
             self.live_game_active = True
             self.live_game = LiveGame(self)
-
-            # Create new player records
-            for player in self.team.roster:
-                self.team.roster[player].create_game_dictionary(self.active_game)
 
 
 # call the main code

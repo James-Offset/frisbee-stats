@@ -6,96 +6,133 @@ Not sure if this is necessary at this point, but we can set up a class if needed
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+import copy
 
 class Player():
     """A class for all the data and functions that relate to a single player"""
 
-    def __init__(self, parent, number):
+    def __init__(self, parent, name, number, row_number):
         """Sets up the data fields for the player"""
 
         self.parent = parent
+        self.name = name
         self.number = number
+        self.display_row_number = row_number
 
-        # set up all the bits for the GUI
-        self._create_gui_elements()
+        # !!
+        self.tournament_name = "tournament"
 
-        # create a dictionary to store performance data for the whole tournament
-        self.aggregate_dictionary = {
+        # set up the data structures for the class
+        self._create_data_structures()
+
+        # add the player to the tournament-level stats tab
+        self.prepare_to_receive_data(self.tournament_name)
+
+
+    def _create_data_structures(self):
+        """ Creates all the dictionaries that player data and gui information will be stored"""
+
+        # create a dictionary to store the input data provided by the game class. Sub-dictionary for each game
+        self.page_stats_count = {}
+
+        # create templates for the game data sub dictionary
+        self.template_stats_count_dict = {
             "number of points played" : 0,
-            "Points Scored" : 0,
-            "Points Won" : 0,
-            "Turns Won" : 0,
-            "Turns Lost" : 0
-        }
-
-        self.stats_count = {
-            "number of points played" : 0,
-            "possessions played" : 0,
-            "offence possessions" : 0,
-            "defence possessions" : 0,
+            "number of possessions played" : 0,
+            "no. offence possessions" : 0,
+            "no. defence possessions" : 0,
             "turnovers conceded" : 0,
             "turnovers won" : 0,
         }
 
-        self.display_dictionary={
+        # create a dictionary that will store all the gui labels that will display data
+        self.gui_labels_dicts = {}
+
+        # dictionary for gui info that does not change
+        self.fixed_gui_display_data = {
+            "name" : self.name,
+            "number" : self.number,
+        }
+
+        # dictionary for gui info that changes each point. This will hold a sub-dictionary per game
+        self.variable_gui_display_data = {}
+        
+        # create a template for this sub dictionary
+        self.template_variable_display_dict ={
             "number of points played" : 0,
+            "no. offence possessions" : 0,
             "offence conversion rate" : 0,
+            "no. defence possessions" : 0,
             "defence conversion rate" : 0,
         }
 
-        # create a dictionary to store data for each game played
-        self.game_stats_count = {}
 
-    def _create_gui_elements(self):
-        """Sorts out all the labels that will display a data point for a certain player"""
+    def prepare_to_receive_data(self, data_tab):
+        """when a new stats roster tab is created this function creates sub-dictionaries to recieve data and adds the player details to the table"""
+
+        #!! consider re-drawing entire grid in alphabetical order
+
+        # find out what the reference for the new data tab is (tournament name or game ref)
+        self.live_game_ref = data_tab
+
+        # create a new sub-dictionary to store input data for that game from the game class
+        self.page_stats_count[self.live_game_ref] = copy.deepcopy(self.template_stats_count_dict)
         
-        # create a dictionary to hold all of the elements that will go into the roster display tab
-        self.gui_elements = {
-            "name" : 0,
-            "number" : 0,
-            "separator placeholder" : 0,
-            "number of points played" : 0,
-            "offence conversion rate" : 0,
-            "defence conversion rate" : 0,
-        }
+        # copy out a sub dictionary for the variable display data that will be shown on this stats tab
+        self.variable_gui_display_data[self.live_game_ref] = copy.deepcopy(self.template_variable_display_dict)
+        
+        # create a sub-dictionary to hold all of the gui elements that will go into the stats tab
+        self.gui_labels_dicts[self.live_game_ref] = {}
 
-        for element in self.gui_elements:
-            self.gui_elements[element] = tk.Label(self.parent.roster_page, text="-", font=('Arial', 16))
+        # for each data point that will need to be shown, create a label to hold it and add it to the grid. (both fixed and variable data)
+        column_number = 0
+        for element in self.fixed_gui_display_data:
+            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[data_tab], text=self.fixed_gui_display_data[element], font=('Arial', 16))
+            self.gui_labels_dicts[self.live_game_ref][element].grid(row=self.display_row_number, column=column_number, sticky='ew')
+            column_number += 1
 
+        column_number+=1 # for a separator
+        
+        for element in self.variable_gui_display_data[self.live_game_ref]:
+            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[data_tab], text="-", font=('Arial', 16))
+            self.gui_labels_dicts[self.live_game_ref][element].grid(row=self.display_row_number, column=column_number, sticky='ew')
+            column_number += 1
         
 
+    def update_point_data(self, stats_input):
+        """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
 
-    def create_game_dictionary(self, name_of_game):
-        """When we start a new game, create a new dictionary to keep the stats for that game in"""
+        # store each statistic in both the game dictionaries and the tournament dictionaries
+        for data_set in (self.live_game_ref, self.tournament_name):
+            for game_event in stats_input:
+                # update each input stat in turn
+                self.page_stats_count[data_set][game_event] += stats_input[game_event]
 
-        self.game_stats_count[name_of_game] = {
-            "number of points played" : 0,
-            "possessions played" : 0,
-            "offence possessions" : 0,
-            "defence possessions" : 0,
-            "turnovers conceded" : 0,
-            "turnovers won" : 0,
-        }
+            # calculate new output stats
+            self._calculate_display_stats(data_set)
 
-    def calculate_new_scores(self):
+
+    def _calculate_display_stats(self, sub_dict):
         """takes the new count data from the most recent point and works out the players performance"""
 
         # run calcualtions for each stat
         try:
-            o_conv = round(100 * (1 - (self.stats_count["turnovers conceded"] / self.stats_count["offence possessions"])))
+            o_conv = round(100 * (1 - (self.page_stats_count[sub_dict]["turnovers conceded"] / self.page_stats_count[sub_dict]["no. offence possessions"])))
         except ZeroDivisionError:
             o_conv = "-"
         
         try:
-            d_conv = round(100 * (self.stats_count["turnovers won"] / self.stats_count["defence possessions"]))
+            d_conv = round(100 * (self.page_stats_count[sub_dict]["turnovers won"] / self.page_stats_count[sub_dict]["no. defence possessions"]))
         except ZeroDivisionError:
             d_conv = "-"
 
         # update display dictionary
-        self.display_dictionary["number of points played"] = self.stats_count["number of points played"]
-        self.display_dictionary["offence conversion rate"] = o_conv
-        self.display_dictionary["defence conversion rate"] = d_conv
+        self.variable_gui_display_data[sub_dict]["number of points played"] = self.page_stats_count[sub_dict]["number of points played"]
+        self.variable_gui_display_data[sub_dict]["no. offence possessions"] = self.page_stats_count[sub_dict]["no. offence possessions"]
+        self.variable_gui_display_data[sub_dict]["offence conversion rate"] = o_conv 
+        self.variable_gui_display_data[sub_dict]["no. defence possessions"] = self.page_stats_count[sub_dict]["no. defence possessions"]
+        self.variable_gui_display_data[sub_dict]["defence conversion rate"] = d_conv
 
         # update the text on the label for each stat on the roster tab
-        for element in self.display_dictionary:
-            self.gui_elements[element].config(text=self.display_dictionary[element])
+        for element in self.variable_gui_display_data[sub_dict]:
+            self.gui_labels_dicts[sub_dict][element].config(text=self.variable_gui_display_data[sub_dict][element])
