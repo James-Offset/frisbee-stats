@@ -46,7 +46,7 @@ class MainGUI():
         self.root = tk.Tk()
 
         # set root settings
-        self.root.geometry("600x600")
+        self.root.geometry("700x700")
         self.root.title("Ultimate Statistics User Interface")
 
         # build notebook
@@ -88,7 +88,7 @@ class MainGUI():
 
         # add a checkbox for custom data, and a button for data collection
         self.checkstate = tk.IntVar()
-        self.check = tk.Checkbutton(self.home_page, text="Input Own Data", font=('Arial', 14), variable=self.checkstate)
+        self.check = tk.Checkbutton(self.home_page, text="Placeholder", font=('Arial', 14), variable=self.checkstate)
         self.check.pack(padx=10,pady=10)
         self.data_button = tk.Button(self.home_page, text="Import Data", font=('Arial', 16), command=self.extract_stock_data)
         self.data_button.pack(padx=10,pady=10)

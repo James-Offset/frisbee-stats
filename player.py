@@ -177,25 +177,53 @@ class Player():
     def calculate_comparison_stats(self):
         """Compares the on- and off- pitch performance for the player"""
 
-        # run once for full tournament data, and once for the latest game
-        for data_set in (self.tournament_name, self.live_game_ref):
+        # for the game that has just ended, calculate the stats
+        if self.negative_stats_count[self.live_game_ref]["no. offence possessions"] > 3: #!! placeholder for data sufficiency tests
 
-            if self.negative_stats_count[data_set]["no. offence possessions"] > 3: #!! placeholder for data sufficiency tests
+            # work out the negative offence and defence conversion rates
+            self.calculate_output_stats(self.negative_stats_count[self.live_game_ref], self.negative_stats_output[self.live_game_ref])
 
-                # work out the negative offence and defence conversion rates
-                self.calculate_output_stats(self.negative_stats_count[data_set], self.negative_stats_output[data_set])
+            # do a quick sum to work out the difference
+            for stat in self.comparison_stats_output[self.live_game_ref]:
+                try:
+                    self.comparison_stats_output[self.live_game_ref][stat] = self.output_display_data[self.live_game_ref][stat] - self.negative_stats_output[self.live_game_ref][stat]
+                except TypeError: # this will be for the marginal rates, which we calc next
+                    pass
 
-                # do a quick sum to work out the difference
-                for stat in self.comparison_stats_output[data_set]:
-                    try:
-                        self.comparison_stats_output[data_set][stat] = self.output_display_data[data_set][stat] - self.negative_stats_output[data_set][stat]
-                    except TypeError: # this will be for the marginal rates, which we calc next
+            # add the calculated values to the display dictionary
+            self.output_display_data[self.live_game_ref]["marginal offence conversion"] = self.comparison_stats_output[self.live_game_ref]["offence conversion rate"]
+            self.output_display_data[self.live_game_ref]["marginal defence conversion"] = self.comparison_stats_output[self.live_game_ref]["defence conversion rate"]
+
+            # prompt the gui to update the display
+            self.update_gui_display(self.live_game_ref)
+
+            # calculate new weighted stats for the whole tournament
+            self._calculate_tournament_marginal_stats()
+
+    def _calculate_tournament_marginal_stats(self):
+        """Tournament marginal stats must be weighted for each game so are calculated differently"""
+
+        for stat in self.comparison_stats_output[self.live_game_ref]:
+            if "marginal" in stat: # marginal stats need to be weighted
+
+                # set a blank variable to be updated with the performance in each game
+                stat_aggregate = 0
+                number_of_games = 0
+
+                for game in self.comparison_stats_output:
+                    if game == self.tournament_name: # skip this as it is not a real game
                         pass
+                    else:
+                        number_of_games+=1
+                        stat_aggregate += self.output_display_data[game][stat] 
+                
+                # average the result across all games
+                averaged_result = round(stat_aggregate / number_of_games)
 
-                # add the calculated values to the display dictionary
-                self.output_display_data[data_set]["marginal offence conversion"] = self.comparison_stats_output[data_set]["offence conversion rate"]
-                self.output_display_data[data_set]["marginal defence conversion"] = self.comparison_stats_output[data_set]["defence conversion rate"]
+                # add that result to the output dictionary
+                self.output_display_data[self.tournament_name][stat] = averaged_result
 
-                # prompt the gui to update the display
-                self.update_gui_display(data_set)
+        # prompt the gui to update the display
+        self.update_gui_display(self.tournament_name)
+
 

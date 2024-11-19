@@ -52,7 +52,7 @@ class Team():
         # create the new tab
         self.player_stats_pages[tab_name] = tk.Frame(self.parent.notebook)
         self.player_stats_pages[tab_name].pack()
-        tab_label = tab_name[:6] + " Stats"
+        tab_label = tab_name[:7] + " Stats"
         self.parent.notebook.add(self.player_stats_pages[tab_name], text=tab_label)
 
         # create a dictionary to hold the details of the GUI columns
