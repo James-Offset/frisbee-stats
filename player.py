@@ -67,6 +67,8 @@ class Player():
             "offence conversion rate" : 0,
             "no. defence possessions" : 0,
             "defence conversion rate" : 0,
+            "marginal offence conversion" : "-",
+            "marginal defence conversion" : "-",
         }
 
 
@@ -132,7 +134,10 @@ class Player():
                     pass
                 else:
                     # calculate new output stats for that data set
-                    self.calculate_display_stats(data_set)
+                    self.calculate_output_stats(self.page_stats_count[data_set], self.output_display_data[data_set])
+
+                    # display those outputs
+                    self.update_gui_display(data_set)
 
         else: # player was not on the pitch, so add the info to the negative stats dictionary
             for data_set in (self.live_game_ref, self.tournament_name):
@@ -140,35 +145,57 @@ class Player():
                     # update each input stat in turn
                     self.negative_stats_count[data_set][game_event] += stats_input[game_event]
 
-    def calculate_display_stats(self, sub_dict):
+    def calculate_output_stats(self, relevant_input_dict, relevant_output_dict):
         """takes the new count data from the most recent point and works out the players performance"""
 
         # run calcualtions for each stat
         try:
-            o_conv = round(100 * (1 - (self.page_stats_count[sub_dict]["turnovers conceded"] / self.page_stats_count[sub_dict]["no. offence possessions"])))
+            o_conv = round(100 * (1 - (relevant_input_dict["turnovers conceded"] / relevant_input_dict["no. offence possessions"])))
         except ZeroDivisionError:
             o_conv = "-"
         
         try:
-            d_conv = round(100 * (self.page_stats_count[sub_dict]["turnovers won"] / self.page_stats_count[sub_dict]["no. defence possessions"]))
+            d_conv = round(100 * (relevant_input_dict["turnovers won"] / relevant_input_dict["no. defence possessions"]))
         except ZeroDivisionError:
             d_conv = "-"
 
         # update display dictionary
-        self.output_display_data[sub_dict]["number of points played"] = self.page_stats_count[sub_dict]["number of points played"]
-        self.output_display_data[sub_dict]["no. offence possessions"] = self.page_stats_count[sub_dict]["no. offence possessions"]
-        self.output_display_data[sub_dict]["offence conversion rate"] = o_conv 
-        self.output_display_data[sub_dict]["no. defence possessions"] = self.page_stats_count[sub_dict]["no. defence possessions"]
-        self.output_display_data[sub_dict]["defence conversion rate"] = d_conv
-
+        relevant_output_dict["number of points played"] = relevant_input_dict["number of points played"]
+        relevant_output_dict["no. offence possessions"] = relevant_input_dict["no. offence possessions"]
+        relevant_output_dict["offence conversion rate"] = o_conv 
+        relevant_output_dict["no. defence possessions"] = relevant_input_dict["no. defence possessions"]
+        relevant_output_dict["defence conversion rate"] = d_conv
+        
+    def update_gui_display(self, data_set):
+        """Updates the labels on the relevant stats tab"""
+        
         # update the text on the label for each stat on the roster tab
-        for element in self.output_display_data[sub_dict]:
-            self.gui_labels_dicts[sub_dict][element].config(text=self.output_display_data[sub_dict][element])
+        for element in self.output_display_data[data_set]:
+            self.gui_labels_dicts[data_set][element].config(text=self.output_display_data[data_set][element])
 
-    def calculate_comparison_stats(self, data_set):
+
+    def calculate_comparison_stats(self):
         """Compares the on- and off- pitch performance for the player"""
 
-        if self.negative_stats_count[data_set]["no. offence possessions"] > 3:
-            # work out the negative offence and defence conversion rates
-            pass
+        # run once for full tournament data, and once for the latest game
+        for data_set in (self.tournament_name, self.live_game_ref):
+
+            if self.negative_stats_count[data_set]["no. offence possessions"] > 3: #!! placeholder for data sufficiency tests
+
+                # work out the negative offence and defence conversion rates
+                self.calculate_output_stats(self.negative_stats_count[data_set], self.negative_stats_output[data_set])
+
+                # do a quick sum to work out the difference
+                for stat in self.comparison_stats_output[data_set]:
+                    try:
+                        self.comparison_stats_output[data_set][stat] = self.output_display_data[data_set][stat] - self.negative_stats_output[data_set][stat]
+                    except TypeError: # this will be for the marginal rates, which we calc next
+                        pass
+
+                # add the calculated values to the display dictionary
+                self.output_display_data[data_set]["marginal offence conversion"] = self.comparison_stats_output[data_set]["offence conversion rate"]
+                self.output_display_data[data_set]["marginal defence conversion"] = self.comparison_stats_output[data_set]["defence conversion rate"]
+
+                # prompt the gui to update the display
+                self.update_gui_display(data_set)
 

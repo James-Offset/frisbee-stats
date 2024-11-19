@@ -66,8 +66,10 @@ class Team():
                 "OC",
                 "DP",
                 "DC",
+                "MO",
+                "MD",
                 ],
-            "column weighting" : [3, 1, 1, 1, 1, 1, 1, 1,],
+            "column weighting" : [2, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
             "label elements" : {}
         }
 
@@ -118,4 +120,8 @@ class Team():
         self.gui_columns["label elements"]["separator1"].grid(row=0, rowspan=self.display_row_number+1, column=self.separator_column_number, sticky="ns", padx=3)
 
 
-        
+    def end_of_game_calcs(self):
+        """Calls each player class to run their comparison calcs"""
+
+        for player in self.roster:
+            self.roster[player].calculate_comparison_stats()

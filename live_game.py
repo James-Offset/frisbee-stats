@@ -215,6 +215,9 @@ class LiveGame():
     def end_game(self):
         """Ends the live game"""
 
+        # call the function to do comparison stats calculations
+        self.parent.team.end_of_game_calcs()
+        
         # close the live game tab
         self.parent.live_game_active=False
         self.live_page.destroy()
