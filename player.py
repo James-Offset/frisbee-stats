@@ -20,13 +20,10 @@ class Player():
         self.display_row_number = row_number
 
         # !!
-        self.tournament_name = "tournament"
+        self.tournament_name = self.parent.parent.tournament_name
 
         # set up the data structures for the class
         self._create_data_structures()
-
-        # add the player to the tournament-level stats tab
-        self.prepare_to_receive_data(self.tournament_name)
 
 
     def _create_data_structures(self):
@@ -34,6 +31,9 @@ class Player():
 
         # create a dictionary to store the input data provided by the game class. Sub-dictionary for each game
         self.page_stats_count = {}
+
+        # create a mirror dictionary to capture team performance when the player is not on the pitch
+        self.negative_stats_count = {}
 
         # create templates for the game data sub dictionary
         self.template_stats_count_dict = {
@@ -54,8 +54,11 @@ class Player():
             "number" : self.number,
         }
 
-        # dictionary for gui info that changes each point. This will hold a sub-dictionary per game
-        self.variable_gui_display_data = {}
+        # dictionary for output display data. This will hold a sub-dictionary per game
+        self.output_display_data = {}
+        self.negative_stats_output = {}
+        self.comparison_stats_output = {}
+
         
         # create a template for this sub dictionary
         self.template_variable_display_dict ={
@@ -77,9 +80,22 @@ class Player():
 
         # create a new sub-dictionary to store input data for that game from the game class
         self.page_stats_count[self.live_game_ref] = copy.deepcopy(self.template_stats_count_dict)
+        self.negative_stats_count[self.live_game_ref] = copy.deepcopy(self.template_stats_count_dict)
+
+        # copy out a sub dictionaries for the variable display data that will be shown on this stats tab, as well as for the negative and comparisons
+        self.output_display_data[self.live_game_ref] = copy.deepcopy(self.template_variable_display_dict)
+        self.negative_stats_output[self.live_game_ref] = copy.deepcopy(self.template_variable_display_dict)
+        self.comparison_stats_output[self.live_game_ref] = copy.deepcopy(self.template_variable_display_dict)
+
+        if self.display_row_number < 0:
+            # must be the full team stats class
+            pass
+        else:
+            # add the player to the relevant stats tab
+            self.add_player_to_gui_tab()
         
-        # copy out a sub dictionary for the variable display data that will be shown on this stats tab
-        self.variable_gui_display_data[self.live_game_ref] = copy.deepcopy(self.template_variable_display_dict)
+    def add_player_to_gui_tab(self):
+        """Sets up the GUI elements that track for that player on the active stats tab"""
         
         # create a sub-dictionary to hold all of the gui elements that will go into the stats tab
         self.gui_labels_dicts[self.live_game_ref] = {}
@@ -87,32 +103,44 @@ class Player():
         # for each data point that will need to be shown, create a label to hold it and add it to the grid. (both fixed and variable data)
         column_number = 0
         for element in self.fixed_gui_display_data:
-            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[data_tab], text=self.fixed_gui_display_data[element], font=('Arial', 16))
+            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[self.live_game_ref], text=self.fixed_gui_display_data[element], font=('Arial', 16))
             self.gui_labels_dicts[self.live_game_ref][element].grid(row=self.display_row_number, column=column_number, sticky='ew')
             column_number += 1
 
         column_number+=1 # for a separator
         
-        for element in self.variable_gui_display_data[self.live_game_ref]:
-            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[data_tab], text="-", font=('Arial', 16))
+        for element in self.output_display_data[self.live_game_ref]:
+            self.gui_labels_dicts[self.live_game_ref][element] = tk.Label(self.parent.player_stats_pages[self.live_game_ref], text="-", font=('Arial', 16))
             self.gui_labels_dicts[self.live_game_ref][element].grid(row=self.display_row_number, column=column_number, sticky='ew')
             column_number += 1
         
 
-    def update_point_data(self, stats_input):
+    def update_point_data(self, stats_input, name_check):
         """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
 
-        # store each statistic in both the game dictionaries and the tournament dictionaries
-        for data_set in (self.live_game_ref, self.tournament_name):
-            for game_event in stats_input:
-                # update each input stat in turn
-                self.page_stats_count[data_set][game_event] += stats_input[game_event]
+        # check whether the player was on the pitch (or it's the team class)
+        if name_check == self.name:
+        
+            # store each statistic in both the game dictionaries and the tournament dictionaries
+            for data_set in (self.live_game_ref, self.tournament_name):
+                for game_event in stats_input:
+                    # update each input stat in turn
+                    self.page_stats_count[data_set][game_event] += stats_input[game_event]
 
-            # calculate new output stats
-            self._calculate_display_stats(data_set)
+                #!! will want to calc display stats for the full team at some point
+                if self.display_row_number < 0:
+                    pass
+                else:
+                    # calculate new output stats for that data set
+                    self.calculate_display_stats(data_set)
 
+        else: # player was not on the pitch, so add the info to the negative stats dictionary
+            for data_set in (self.live_game_ref, self.tournament_name):
+                for game_event in stats_input:
+                    # update each input stat in turn
+                    self.negative_stats_count[data_set][game_event] += stats_input[game_event]
 
-    def _calculate_display_stats(self, sub_dict):
+    def calculate_display_stats(self, sub_dict):
         """takes the new count data from the most recent point and works out the players performance"""
 
         # run calcualtions for each stat
@@ -127,12 +155,20 @@ class Player():
             d_conv = "-"
 
         # update display dictionary
-        self.variable_gui_display_data[sub_dict]["number of points played"] = self.page_stats_count[sub_dict]["number of points played"]
-        self.variable_gui_display_data[sub_dict]["no. offence possessions"] = self.page_stats_count[sub_dict]["no. offence possessions"]
-        self.variable_gui_display_data[sub_dict]["offence conversion rate"] = o_conv 
-        self.variable_gui_display_data[sub_dict]["no. defence possessions"] = self.page_stats_count[sub_dict]["no. defence possessions"]
-        self.variable_gui_display_data[sub_dict]["defence conversion rate"] = d_conv
+        self.output_display_data[sub_dict]["number of points played"] = self.page_stats_count[sub_dict]["number of points played"]
+        self.output_display_data[sub_dict]["no. offence possessions"] = self.page_stats_count[sub_dict]["no. offence possessions"]
+        self.output_display_data[sub_dict]["offence conversion rate"] = o_conv 
+        self.output_display_data[sub_dict]["no. defence possessions"] = self.page_stats_count[sub_dict]["no. defence possessions"]
+        self.output_display_data[sub_dict]["defence conversion rate"] = d_conv
 
         # update the text on the label for each stat on the roster tab
-        for element in self.variable_gui_display_data[sub_dict]:
-            self.gui_labels_dicts[sub_dict][element].config(text=self.variable_gui_display_data[sub_dict][element])
+        for element in self.output_display_data[sub_dict]:
+            self.gui_labels_dicts[sub_dict][element].config(text=self.output_display_data[sub_dict][element])
+
+    def calculate_comparison_stats(self, data_set):
+        """Compares the on- and off- pitch performance for the player"""
+
+        if self.negative_stats_count[data_set]["no. offence possessions"] > 3:
+            # work out the negative offence and defence conversion rates
+            pass
+

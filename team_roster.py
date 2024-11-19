@@ -34,13 +34,20 @@ class Team():
         self.player_stats_pages = {}
 
         # Get tournament name !!"MIR 2017"
-        tournament_name = "tournament"
+        self.tournament_name = parent.tournament_name
+        self.team_name = parent.team_name
+
+        # create a player class that actually represents the whole team
+        self.team_record = Player(self, self.team_name, 0, -1)
 
         # put a roster page on the main GUI for the full tournaments stats
-        self.build_player_stats_page(tournament_name)
+        self.build_player_stats_page(self.tournament_name)
 
     def build_player_stats_page(self, tab_name):
         """Creates the basic grid for the roster page, not filled in"""
+
+        # doesn't fit with the rest of the function, but we need the team stats dictionary to make a new subfolder
+        self.team_record.prepare_to_receive_data(tab_name)
 
         # create the new tab
         self.player_stats_pages[tab_name] = tk.Frame(self.parent.notebook)

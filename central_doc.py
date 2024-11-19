@@ -38,6 +38,10 @@ class MainGUI():
     def __init__(self):
         """Set up the GUI and allow the user to call subsequent functions"""
 
+        #!! Tournament metadata until I get a way to enter it manually
+        self.tournament_name = "MIR2017"
+        self.team_name = "Mythago"
+
         # create GUI window
         self.root = tk.Tk()
 

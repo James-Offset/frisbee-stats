@@ -287,12 +287,19 @@ class FrisbeeGame():
     def _update_player_stats(self):
         """Feeds relevant stats back to each player"""
 
+        # update the stats record for the full team
+        self.parent.team.team_record.update_point_data(self.point_stats_list, self.parent.team_name)
+
+        # update the stats for each player on the pitch
         for player in self.parent.team.roster:
 
             # if the player was on that point
             if player in self.point_lineups[self.point_number]:
+                pass_name = player
+            else:
+                pass_name = self.parent.team_name
 
-                # call the function for that player
-                self.parent.team.roster[player].update_point_data(self.point_stats_list)
+            # call the function for that player
+            self.parent.team.roster[player].update_point_data(self.point_stats_list, pass_name)
 
 
