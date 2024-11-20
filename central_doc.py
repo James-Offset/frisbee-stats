@@ -46,7 +46,10 @@ class MainGUI():
         self.root = tk.Tk()
 
         # set root settings
-        self.root.geometry("700x700")
+        self.gui_width = 700
+        self.gui_height = 700
+        geometry_set = str(self.gui_width) + "x" + str(self.gui_height)
+        self.root.geometry(geometry_set)
         self.root.title("Ultimate Statistics User Interface")
 
         # build notebook
@@ -163,7 +166,7 @@ class MainGUI():
             self.active_game = game_class_name
 
             # create a game team stats tab
-            self.team.build_player_stats_page(game_class_name)
+            self.team.build_team_stats_page(game_class_name)
 
             # add the players to the new stats page
             self.team.add_players_to_stats_page(game_class_name)

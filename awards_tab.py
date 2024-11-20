@@ -101,7 +101,7 @@ class AwardsTab():
             self.gui_awards_winners[award].grid(row=self.row_number , column = 1, sticky=tk.W + tk.E, pady=4)
 
             # add award description
-            self.gui_awards_descriptions[award] = ttk.Label(self.gui_page, text=self.awards_definitions[award][0], font=('Arial', 12), wraplength = 200)
+            self.gui_awards_descriptions[award] = ttk.Label(self.gui_page, text=self.awards_definitions[award][0], font=('Arial', 12), wraplength = 200, justify= tk.CENTER)
             self.gui_awards_descriptions[award].grid(row=self.row_number , column = 2, pady=4)
 
     def calcualte_awards(self):
@@ -140,11 +140,11 @@ class AwardsTab():
             pass
     
     def jug_cal(self, player):
-        return self.parent.roster[player].output_display_data[self.tour_name]["marginal offence conversion"]
+        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
     
     def wall_cal(self, player):
-        return self.parent.roster[player].output_display_data[self.tour_name]["marginal defence conversion"]
+        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
     
     def bat_cal(self, player):
-        score = self.parent.roster[player].output_display_data[self.tour_name]["no. offence possessions"] + self.parent.roster[player].output_display_data[self.tour_name]["no. defence possessions"]
+        score = self.parent.roster[player].data_dict[self.tour_name]["pitch"]["number of possessions played"]
         return score
