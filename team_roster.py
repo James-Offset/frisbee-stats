@@ -14,6 +14,7 @@ from tkinter import ttk
 
 """My Code"""
 from player import Player
+from awards_tab import AwardsTab
 
 
 
@@ -43,6 +44,10 @@ class Team():
         # put a roster page on the main GUI for the full tournaments stats
         self.build_player_stats_page(self.tournament_name)
 
+        # create the awards tab
+        self.awards_class = AwardsTab(self)
+
+
     def build_player_stats_page(self, tab_name):
         """Creates the basic grid for the roster page, not filled in"""
 
@@ -58,7 +63,7 @@ class Team():
         # create a dictionary to hold the details of the GUI columns
         self.gui_columns = {
             "heading text" : [
-                "Player Name", 
+                "Player", 
                 "#", 
                 "separator1", 
                 "PP", 
@@ -68,10 +73,14 @@ class Team():
                 "DC",
                 "MO",
                 "MD",
+                "OS",
+                "DS", 
+                "TS",
                 ],
-            "column weighting" : [2, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+            "column weighting" : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
             "label elements" : {}
         }
+        # <<< These correspond to the output stats in the player class
 
         # neaten this later !!
         self.separator_column_number = 2
@@ -125,3 +134,6 @@ class Team():
 
         for player in self.roster:
             self.roster[player].calculate_comparison_stats()
+        
+        # update awards
+        self.awards_class.calcualte_awards()

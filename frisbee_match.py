@@ -103,7 +103,7 @@ class FrisbeeGame():
             # add heading labels
             if "separator" in column:
                 self.gui_grid_dict["label elements"][column] = ttk.Separator(self.game_page, orient="vertical")
-                self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=2)
+                self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=1)
             else:
                 self.gui_grid_dict["label elements"][column] = tk.Label(self.game_page, text=self.gui_grid_dict["heading text"][column_number], font=('Arial', 18))
                 self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=5)
