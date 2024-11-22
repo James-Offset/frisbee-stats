@@ -27,6 +27,7 @@ from tkinter import ttk
 from data_extractor import DataExtractor
 from frisbee_match import FrisbeeGame
 from team_roster import Team
+from live_game import LiveGame
 
 
 
@@ -37,12 +38,14 @@ class MainGUI():
     def __init__(self):
         """Set up the GUI and allow the user to call subsequent functions"""
 
-
         # create GUI window
         self.root = tk.Tk()
 
         # set root settings
-        self.root.geometry("600x600")
+        self.gui_width = 700
+        self.gui_height = 700
+        geometry_set = str(self.gui_width) + "x" + str(self.gui_height)
+        self.root.geometry(geometry_set)
         self.root.title("Ultimate Statistics User Interface")
 
         # build notebook
@@ -53,17 +56,14 @@ class MainGUI():
         # set up key tabs
         self._build_homepage()
 
-        # Create supporting classes
-        self.team = Team(self)
-
-        # create a blank dictionary to store our game classes
-        self.games = {}
+        # set up a few markers
+        self.data_extracted = False
+        self.game_import = False
+        self.live_game_active = False
+        self.metadata_flag = 0
                 
 
-
-
-
-
+        # run the app
         self.root.mainloop()
         print("check")
 
@@ -79,71 +79,223 @@ class MainGUI():
         self.label = tk.Label(self.home_page, text="Frisbee Stats Homepage", font=('Arial', 18))
         self.label.pack(padx=20, pady= 20)
 
-        # add a checkbox for custom data, and a button for data collection
-        self.checkstate = tk.IntVar()
-        self.check = tk.Checkbutton(self.home_page, text="Input Own Data", font=('Arial', 14), variable=self.checkstate)
-        self.check.pack(padx=10,pady=10)
-        self.data_button = tk.Button(self.home_page, text="Import Data", font=('Arial', 16), command=self.extract_stock_data)
-        self.data_button.pack(padx=10,pady=10)
+        # add a textbox for manual metadata info !! change this to an entry widget later
+        self.metadata_label = tk.Label(self.home_page, text="Enter your team name to start")
+        self.metadata_label.pack(pady=2)
+        self.metadata_box = tk.Text(self.home_page, height=1, width=15, font=('Arial', 16))
+        self.metadata_box.pack(pady=2)
+        self.metadata_box.bind("<Return>", self.submit_metagame_info)
+        self.metadata_button = ttk.Button(self.home_page, text="Submit Info", command=self.manual_metadata_receive)
+        self.metadata_button.pack(padx=10,pady=10)
+
+        # add a button to import the data we already have
+        self.import_data_button = ttk.Button(self.home_page, text="Import Data", command=self.extract_stock_data)
+        self.import_data_button.pack(padx=10,pady=10)
 
         # add a status label
-        self.status_label = tk.Label(self.home_page, text="Please click for data input")
-        self.status_label.pack()
+        self.import_status_label = tk.Label(self.home_page, text="Please click for roster import")
+        self.import_status_label.pack(pady=5)
+
+        # add label asking for new player name
+        self.player_name_label = tk.Label(self.home_page, text="Enter the name for a new player below")
+        self.player_name_label.pack(pady=2)
+
+        # add new player text entry box !! change this to an entry widget later
+        self.player_name_box = tk.Text(self.home_page, height=1, width=10, font=('Arial', 16))
+        self.player_name_box.pack(pady=2)
+        self.player_name_box.bind("<Return>", self.disable_newline)
+
+        # add label asking for new player name
+        self.player_number_label = tk.Label(self.home_page, text="Enter the number for a new player below")
+        self.player_number_label.pack(pady=2)
+
+        self.player_number_box = tk.Text(self.home_page, height=1, width=5, font=('Arial', 16))
+        self.player_number_box.pack(pady=2)
+        self.player_number_box.bind("<Return>", self.submit_player_number)
+
+        # add new player entry button
+        self.new_player_button = ttk.Button(self.home_page, text="Enter Player", command=self.manual_player_input)
+        self.new_player_button.pack(padx=20, pady=5)
+
+        # add a status label
+        self.player_entry_status_label = tk.Label(self.home_page, text="Click the button above to enter new player info")
+        self.player_entry_status_label.pack(pady=2)
+
+        # add new game button
+        self.new_game_button = ttk.Button(self.home_page, text="Start New Game", command=self.start_new_game)
+        self.new_game_button.pack(padx=20, pady=20)
+
+        # disable buttons not immediately useful
+        self.new_game_button.state(["disabled"])
+        self.new_player_button.state(["disabled"])
+        
     
+    def manual_metadata_receive(self):
+        """This is the method that will trigger when the metadata button is pushed"""
 
+        box_entry = self.metadata_box.get('1.0', tk.END)
 
+        self.metadata_message = "Unknown Error"
+
+        try:
+            if self.metadata_flag == 0:
+                team_name = box_entry[:-1]
+                if len(team_name) < 20 and len(team_name) > 2:
+                    self.team_name = team_name
+                    self.metadata_flag = 1
+                    self.metadata_message = "Please enter the tournament name"
+                    self.metadata_box.delete('1.0', tk.END)
+                else:
+                    self.metadata_message = "Team name length must be no more than 20 characters"
+            elif self.metadata_flag == 1:
+                tournament_name = box_entry[:-1]
+                if len(tournament_name) < 20 and len(tournament_name) > 2:
+                    self.tournament_name = tournament_name
+                    self.metadata_flag = 2
+                    self.metadata_message = "Please enter the number of players on at once (5 or 7)"
+                    self.metadata_box.delete('1.0', tk.END)
+                else:
+                    self.metadata_message = "Tournament name length must be no more than 20 characters"
+            elif self.metadata_flag == 2:
+                self.metadata_message = "Please enter 5 or 7 only"
+                try:
+                    number_of_players = int(box_entry)
+                except ValueError:
+                    pass
+                else:
+                    if number_of_players == 5 or number_of_players == 7:
+                        self.number_of_players_at_once = number_of_players
+                        self.metadata_flag = 3
+                        self.metadata_message = "Metagame info entry complete"
+                        self.metadata_box.delete('1.0', tk.END)
+                        self.complete_set_up()
+        except Exception:
+            self.metadata_message = "Unknown error, please try again"
+
+        self.metadata_label.config(text=self.metadata_message)
 
     def extract_stock_data(self):
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
 
-        # start by importing all the data
-        extraction_tool = DataExtractor()
-        self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
+        if self.data_extracted == False:
+            # set the falg to True
+            self.data_extracted = True
 
-        resultsContents = tk.StringVar()
-        self.status_label['textvariable'] = resultsContents
-        resultsContents.set('New value to display')
+            # Tournament metadata for input
+            self.tournament_name = "MIR2017"
+            self.team_name = "Mythago"
+            self.number_of_players_at_once = 5
 
-        # create player classes
-        for player in self.imported_roster:
-            self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
+            # now we have the metadata, we can complete the set up
+            self.complete_set_up()
 
-        self._create_game_classes()
+            # import all the data
+            extraction_tool = DataExtractor()
+            self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
+
+            # change button text once data is extracted !! move this later
+            self.resultsContents = tk.StringVar()
+            self.import_status_label['textvariable'] = self.resultsContents
+            self.resultsContents.set('Import Game Data')
+
+            # create player classes
+            for player in self.imported_roster:
+                self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
+
+        elif self.game_import == False:
+            # create game classes
+            self._create_game_classes_from_import()
+            self.game_import = True
+            self.resultsContents.set('Data extracted')
+            self.import_data_button.state(["disabled"])
                     
-
-
-    def _create_game_classes(self):
+    def _create_game_classes_from_import(self):
         """Creates a class for each game played and runs the relevant functions"""
-
 
         # create a loop for each game
         for game_number in range(self.tournament_metadata['Number of Games']):
-            # Assign a name to the game
-            game_class_name = "Game " + str(game_number+1)
-
-            # create a dictionary to store performance data for each player
-            for player in self.imported_roster:
-                self.imported_roster[player][game_class_name] = {
-                    "Points Played" : 0,
-                    "Points Scored" : 0,
-                    "Points Won" : 0,
-                    "Turns Won" : 0,
-                    "Turns Lost" : 0
-                }
+            self.start_new_game()
 
             # find the set of raw data that applies to that game
-            for game_data in self.raw_game_data:
-                if game_class_name in game_data:
+            for name_of_considered_game in self.raw_game_data:
+                if self.active_game in name_of_considered_game:
                     break
+            
+            self.games[self.active_game].crunch_data_from_import(self.raw_game_data[name_of_considered_game]['Turns per Point'], self.raw_game_data[name_of_considered_game]["Active Players"])
+            self.live_game.end_game()
+
+    def complete_set_up(self):
+        """Once the metadata for the tournament is in, run this code to allow for the full app to run"""
+
+        # Create supporting classes
+        self.team = Team(self)
+
+        # create a blank dictionary to store our game classes
+        self.games = {}
+        self.number_of_games = 0 
+
+        # change the status of buttons
+        self.metadata_button.state(["disabled"])
+        self.new_player_button.state(["!disabled"])
+        
+
+    def manual_player_input(self):
+        """Takes the user entry in the text boxes and checks it. If ok, adds a new player"""
+
+        # copy out the user entries
+        name_entry = self.player_name_box.get('1.0', tk.END)
+        number_entry = self.player_number_box.get('1.0', tk.END)
+
+        # pass to function in team class
+        return_message = self.team.check_manual_player_entry(name_entry, number_entry)
+
+        # show the message communicating whether the data entry was successful or not
+        self.player_entry_status_label.config(text=return_message)
+
+        # self.player_name_box.delete
+
+    def disable_newline(self, event):
+        """If someone tries to hit enter while putting in an entry, it will do nothing"""
+        return "break"
+    
+    def submit_player_number(self, event):
+        """If the user hits enter after their player number, it is submitted"""
+        self.manual_player_input()
+        return "break"
+    
+    def submit_metagame_info(self, event):
+        """If the user hits enter after their metagame info, it is submitted"""
+        if self.metadata_flag == 3:
+            pass # do nothing
+        else:
+            self.manual_metadata_receive()
+        return "break"
+
+    def start_new_game(self):
+        """Creates the class for a new game when button pressed by user"""
+        
+        if self.live_game_active == False:
+            # increment game number
+            self.number_of_games += 1
+
+            # Assign a name to the game
+            game_class_name = "Game " + str(self.number_of_games)
 
             # create a new class with the assembled input data
-            #!! self.games[game_class_name] = FrisbeeGame(self.imported_roster, self.raw_game_data[game_data])
             self.games[game_class_name] = FrisbeeGame(self, game_class_name)
 
-            self.games[game_class_name].crunch_data_from_import(self.raw_game_data[game_data]['Turns per Point'])
+            # make a note of what the active game is called
+            self.active_game = game_class_name
 
+            # create a game team stats tab
+            self.team.build_game_stats_page(game_class_name)
 
+            # add the players to the new stats page
+            self.team.add_players_to_stats_page(game_class_name)
 
+            # create a live game tab
+            self.live_game_active = True
+            self.live_game = LiveGame(self)
 
 
 # call the main code
