@@ -87,22 +87,15 @@ class Player():
             "d-line score",
             "total score",
         ]
-
-        # marginal stats are calculated between zones, so sit in a separate dictionary
-        self.marginal_stats = {}
         
-        self.template_marginal_stats = {
-            "marginal offence conversion" : "-",
-            "marginal defence conversion" : "-",
-            "marginal o-line score" : "-",
-            "marginal d-line score" : "-",
-            "marginal total score" : "-",
-        }
-
-        # these also need to be displayed
-        self.display_addendum = []
-        for stat in self.template_marginal_stats:
-            self.display_addendum.append(stat)
+        # create a list of useful stats from the comparison dictionary
+        self.marginal_display_stats = [
+            "marginal offence conversion rate",
+            "marginal defence conversion rate",
+            "o-line score",
+            "d-line score",
+            "total score",
+        ]
 
 
     def prepare_to_receive_data(self, data_tab):
@@ -115,7 +108,6 @@ class Player():
 
         # create a new sub-dictionary to store input data for that game
         self.data_dict[self.live_game_ref] = copy.deepcopy(self.template_game_stats)
-        self.marginal_stats[self.live_game_ref] = copy.deepcopy(self.template_marginal_stats)
 
         if self.display_row_number < 0:
             # must be the full team stats class
@@ -161,7 +153,7 @@ class Player():
         # for each data point that will need to be shown, create a label to hold it and add it to the grid. (both fixed and variable data)
         column_number = 0
         
-        for stat in self.display_list + self.display_addendum:
+        for stat in self.display_list + self.marginal_display_stats:
             # create a label for the data point
             self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.player_frame[self.live_game_ref], text="-", font=('Arial', 16))
             self.gui_labels_dicts[self.live_game_ref][stat].grid(row=self.display_row_number, column=column_number, sticky='ew')
@@ -195,21 +187,16 @@ class Player():
             # calculate new output stats for that data set
             self.process_stats(data_set, zone)
             
-            #!! will want to calc display stats for the full team at some point
-            if self.display_row_number < 0:
-                    # update the text on the label for each stat on the roster tab
-                    for stat in self.display_list:
-                        if stat == "name" or stat == "number":
-                            pass # we don't want to display this info
-                        else:
-                            self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
-
-                    for stat in self.extra_team_display:
+            if self.display_row_number < 0: # it is the full team
+                # update the text on the label for each stat on the game stats tab
+                for stat in self.display_list:
+                    if stat == "name" or stat == "number":
+                        pass # we don't want to display this info
+                    else:
                         self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
             else:
-
                 # display those outputs
-                self.update_gui_display(data_set)
+                self.update_player_gui_display(data_set)
 
 
     def process_stats(self, data_set, zone):
@@ -230,19 +217,21 @@ class Player():
         self.data_dict[data_set][zone]["offence conversion rate"] = o_conv 
         self.data_dict[data_set][zone]["defence conversion rate"] = d_conv
         
-    def update_gui_display(self, data_set):
+    def update_player_gui_display(self, data_set):
         """Updates the labels on the relevant stats tab"""
         
         # update the text on the label for each stat on the roster tab
         for stat in self.display_list:
             self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
 
-        for stat in self.marginal_stats[self.live_game_ref]:
-            self.gui_labels_dicts[data_set][stat].config(text=self.marginal_stats[data_set][stat])
+        for stat in self.marginal_display_stats:
+            # remove the word marginal when we look in comparison
+            comparison_stat = stat.replace("marginal ", "")
+            self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["comparison"][comparison_stat])
 
 
     def calculate_comparison_stats(self):
-        """Compares the on- and off- pitch performance for the player"""
+        """Compares the on- and off- pitch performance for the player at the end of the game"""
 
         # data sufficiency checks, player must have done and not done at least 5 offence and defence possessions
         sufficient_data = False
@@ -259,8 +248,9 @@ class Player():
         # for the game that has just ended, calculate the stats
         if sufficient_data == True:
 
-            # calculate performance scores
-            self._calculate_performance_scores()
+            # calculate the o-line and d-line score for the player
+            for zone in ("pitch", "bench"):
+                self.calculate_performance_scores(zone)
 
             # do a quick sum to work out the difference between pitch and bench scores
             for stat in self.data_dict[self.live_game_ref]["comparison"]:
@@ -269,74 +259,72 @@ class Player():
                 except TypeError: # this will skip over stats with text entries
                     pass
 
-            #!! copy comparison scores over to the marginal dictionary
-            self._calculate_marginal_scores()
-
             # prompt the gui to update the display
-            self.update_gui_display(self.live_game_ref)
+            self.update_player_gui_display(self.live_game_ref)
 
             # calculate new weighted stats for the whole tournament
             self._calculate_tournament_marginal_stats()
 
-    def _calculate_performance_scores(self):
+    def calculate_performance_scores(self, zone):
         """Calculates the o-line and d-line scores"""
-        for zone in ("pitch", "bench"):
-            o_score_pt1 = (100 - self.data_dict[self.live_game_ref][zone]["offence conversion rate"]) * self.data_dict[self.live_game_ref][zone]["defence conversion rate"]
-            o_score_pt2 = self.data_dict[self.live_game_ref][zone]["offence conversion rate"] * 100 / ( 10000 - o_score_pt1)
-            self.data_dict[self.live_game_ref][zone]["o-line score"] = round(o_score_pt2 * 100)
+        o_score_pt1 = (100 - self.data_dict[self.live_game_ref][zone]["offence conversion rate"]) * self.data_dict[self.live_game_ref][zone]["defence conversion rate"]
+        o_score_pt2 = self.data_dict[self.live_game_ref][zone]["offence conversion rate"] * 100 / ( 10000 - o_score_pt1)
+        self.data_dict[self.live_game_ref][zone]["o-line score"] = round(o_score_pt2 * 100)
 
-            d_score_pt1 = self.data_dict[self.live_game_ref][zone]["defence conversion rate"] * o_score_pt2
-            self.data_dict[self.live_game_ref][zone]["d-line score"] = round(d_score_pt1)
+        d_score_pt1 = self.data_dict[self.live_game_ref][zone]["defence conversion rate"] * o_score_pt2
+        self.data_dict[self.live_game_ref][zone]["d-line score"] = round(d_score_pt1)
 
-            self.data_dict[self.live_game_ref][zone]["total score"] = round((d_score_pt1 + o_score_pt2 * 100) / 2)
-
-    def _calculate_marginal_scores(self):
-        """Calculates the more complex marginal scores"""
-
-        # add the marginal turnover rate values to the display dictionary
-        marginal_oc = self.data_dict[self.live_game_ref]["comparison"]["offence conversion rate"]
-        marginal_dc = self.data_dict[self.live_game_ref]["comparison"]["defence conversion rate"]
-
-        self.marginal_stats[self.live_game_ref]["marginal offence conversion"] = marginal_oc
-        self.marginal_stats[self.live_game_ref]["marginal defence conversion"] = marginal_dc
-
-        #!! calculate other performance scores
-        o_score = marginal_oc * 100 / ( 10000 - ( (100 - marginal_oc) * marginal_dc))
-        d_score = o_score * self.marginal_stats[self.live_game_ref]["marginal defence conversion"] / 100
-        total_score = (o_score + d_score) / 2
-
-        self.marginal_stats[self.live_game_ref]["marginal o-line score"] = self.data_dict[self.live_game_ref]["comparison"]["o-line score"]
-        self.marginal_stats[self.live_game_ref]["marginal d-line score"] = self.data_dict[self.live_game_ref]["comparison"]["d-line score"]
-        self.marginal_stats[self.live_game_ref]["marginal total score"] = self.data_dict[self.live_game_ref]["comparison"]["total score"]
+        self.data_dict[self.live_game_ref][zone]["total score"] = round((d_score_pt1 + o_score_pt2 * 100) / 2)
 
     def _calculate_tournament_marginal_stats(self):
         """Tournament marginal stats must be weighted for each game so are calculated differently. Only pitch matters for this"""
 
-        for stat in self.template_marginal_stats:
-
-            # set a blank variable to be updated with the performance in each game
-            stat_aggregate = 0
-            number_of_games = 0
-
-            for game in self.data_dict:
-                if game == self.tournament_name: # skip this as it is not a real game
-                    pass
-                else:
-                    try:
-                        stat_aggregate += self.marginal_stats[game][stat] 
-                    except TypeError:
-                        pass # there must be insufficient data from a previous game.
-                    else:
-                        number_of_games+=1
-
+        for stat in self.marginal_display_stats:
+            # remove the word marginal when we look in comparison
+            comparison_stat = stat.replace("marginal ", "")
+            self.calculate_mean_stats("comparison", comparison_stat)
             
-            # average the result across all games
-            averaged_result = round(stat_aggregate / number_of_games)
-
-            # add that result to the output dictionary
-            self.marginal_stats[self.tournament_name][stat] = averaged_result
-
         # prompt the gui to update the display
-        self.update_gui_display(self.tournament_name)
+        self.update_player_gui_display(self.tournament_name)
+
+    def calculate_mean_stats(self, zone, stat):
+        """Averages a stat across all games so it can be put on the tournamnet-level display"""
+        # set a blank variable to be updated with the performance in each game
+        stat_aggregate = 0
+        number_of_games = 0
+
+        for game in self.data_dict:
+            if game == self.tournament_name: # skip this as it is not a real game
+                pass
+            else:
+                try:
+                    stat_aggregate += self.data_dict[game][zone][stat] 
+                except TypeError:
+                    pass # there must be insufficient data from a previous game.
+                else:
+                    number_of_games+=1
+        
+        # average the result across all games
+        averaged_result = round(stat_aggregate / number_of_games)
+
+        # add that result to the output dictionary
+        self.data_dict[self.tournament_name][zone][stat]  = averaged_result
+
+    def update_team_performance(self):
+        """The o scores and d scores for the whole team are not marginal, so must be calculated slightly differently"""
+
+        # calculate the scores
+        self.calculate_performance_scores("pitch")
+
+        # process the new data
+        for stat in self.extra_team_display:
+            # update the gui for the most recent game
+            self.gui_labels_dicts[self.live_game_ref][stat].config(text = self.data_dict[self.live_game_ref]["pitch"][stat])
+
+            # work out the average across all games
+            self.calculate_mean_stats("pitch", stat)
+
+            # update the gui for the whole tournament
+            self.gui_labels_dicts[self.tournament_name][stat].config(text = self.data_dict[self.tournament_name]["pitch"][stat])
 
 

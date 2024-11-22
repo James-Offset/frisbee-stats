@@ -149,27 +149,27 @@ class AwardsTab():
             pass
     
     def mvp_cal(self,player):
-        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal total score"]
+        return self.parent.roster[player].data_dict[self.tour_name]["comparison"]["total score"]
     
     def o_mvp_cal(self, player):
-        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal o-line score"]
+        return self.parent.roster[player].data_dict[self.tour_name]["comparison"]["o-line score"]
     
     def d_mvp_cal(self, player):
-        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal d-line score"]
+        return self.parent.roster[player].data_dict[self.tour_name]["comparison"]["d-line score"]
     
     def jug_cal(self, player):
-        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
+        return self.parent.roster[player].data_dict[self.tour_name]["comparison"]["offence conversion rate"]
     
     def wall_cal(self, player):
-        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
+        return self.parent.roster[player].data_dict[self.tour_name]["comparison"]["defence conversion rate"]
     
     def bat_cal(self, player):
         score = self.parent.roster[player].data_dict[self.tour_name]["pitch"]["number of possessions played"]
         return score
     
     def glass_cal(self, player):
-        m_o_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
-        m_d_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
+        m_o_c = self.parent.roster[player].data_dict[self.tour_name]["comparison"]["offence conversion rate"]
+        m_d_c = self.parent.roster[player].data_dict[self.tour_name]["comparison"]["defence conversion rate"]
 
         if m_o_c > 0 and m_d_c < 0:
             score = m_o_c - m_d_c
@@ -178,8 +178,8 @@ class AwardsTab():
         return score
     
     def pac_cal(self, player):
-        m_o_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
-        m_d_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
+        m_o_c = self.parent.roster[player].data_dict[self.tour_name]["comparison"]["offence conversion rate"]
+        m_d_c = self.parent.roster[player].data_dict[self.tour_name]["comparison"]["defence conversion rate"]
 
         if m_o_c < 0 and m_d_c > 0:
             score = m_d_c - m_o_c

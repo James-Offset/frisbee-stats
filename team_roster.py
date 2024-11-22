@@ -260,11 +260,13 @@ class Team():
         """Calls each player class to run their comparison calcs"""
 
         # work out the minimum number of possessions required to be considered noteworthy (20%)
-
         team_o_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
         self.requ_o_possessions = round(team_o_poss * 0.2)
         team_d_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
         self.requ_d_possessions = round(team_d_poss * 0.2)
+
+        # work out the performance of the team
+        self.team_record.update_team_performance()
 
         # prompt each player class to calcualte their end of game calculations
         for player in self.roster:
