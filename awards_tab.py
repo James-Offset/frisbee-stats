@@ -19,14 +19,15 @@ class AwardsTab():
         """Creates the data structure for the awards"""
 
         self.awards_definitions = {
-            "MVP" :             ["Most Valuable Player", 0],
-            "O-Line MVP" :      ["Most likely to win the point on offence", 0],
-            "D-Line MVP" :      ["Most likely to win the point on defence", 0],
+            "MVP" :             ["Most Valuable Player", self.mvp_cal],
+            "O-Line MVP" :      ["Most likely to win the point on offence", self.o_mvp_cal],
+            "D-Line MVP" :      ["Most likely to win the point on defence", self.d_mvp_cal],
             "The Juggernaut" :  ["Highest offence score rate", self.jug_cal],
             "The Wall" :        ["Highest defence turnover rate", self.wall_cal],
             "Big Batteries" :   ["Most possessions played", self.bat_cal],
-            "Glass Cannon" :    ["Greatest offence to defence scores", 0],
-            "Pacifist" :        ["Greatest defence to offence scores", 0],
+            "Captain Dependable" :  ["Most consistent contribution", 0],
+            "Glass Cannon" :    ["Greatest offence to defence scores", self.glass_cal],
+            "Pacifist" :        ["Greatest defence to offence scores", self.pac_cal],
             "The Infiltrator" : ["Highest score rate against tough opposition", 0],
             "The Fortress" :    ["Highest turnover win rate against tough opposition", 0],
             "Flat-Track Bully": ["Scores skew towards winning games", 0],
@@ -113,6 +114,7 @@ class AwardsTab():
             # run through each award category and compare if the player beats the previous score
             for award in self.awards_definitions:
 
+                #!! until we get a method for each award, this check needs to be in
                 if self.awards_definitions[award][1] == 0:
                     pass
                 else:
@@ -121,6 +123,10 @@ class AwardsTab():
         # update the gui output
         for award in self.awards_definitions:
             self.gui_awards_winners[award].config(text=self.winners[award]["Holder of Highest Score"])
+        
+        # wipe all the scores so that the next time awards are awarded it is done with a clean slate
+        for award in self.awards_definitions:
+            self.winners[award]["Highest Recorded Score"] = 0
                     
     
     def process_player_score(self, award, player):
@@ -139,6 +145,15 @@ class AwardsTab():
         except TypeError:
             pass
     
+    def mvp_cal(self,player):
+        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal total score"]
+    
+    def o_mvp_cal(self, player):
+        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal o-line score"]
+    
+    def d_mvp_cal(self, player):
+        return self.parent.roster[player].marginal_stats[self.tour_name]["marginal d-line score"]
+    
     def jug_cal(self, player):
         return self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
     
@@ -147,4 +162,24 @@ class AwardsTab():
     
     def bat_cal(self, player):
         score = self.parent.roster[player].data_dict[self.tour_name]["pitch"]["number of possessions played"]
+        return score
+    
+    def glass_cal(self, player):
+        m_o_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
+        m_d_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
+
+        if m_o_c > 0 and m_d_c < 0:
+            score = m_o_c - m_d_c
+        else:
+            score = 0
+        return score
+    
+    def pac_cal(self, player):
+        m_o_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal offence conversion"]
+        m_d_c = self.parent.roster[player].marginal_stats[self.tour_name]["marginal defence conversion"]
+
+        if m_o_c < 0 and m_d_c > 0:
+            score = m_d_c - m_o_c
+        else:
+            score = 0
         return score

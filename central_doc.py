@@ -131,8 +131,6 @@ class MainGUI():
             self.game_import = True
             self.resultsContents.set('Data extracted')
                     
-
-
     def _create_game_classes_from_import(self):
         """Creates a class for each game played and runs the relevant functions"""
 
