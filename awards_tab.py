@@ -132,16 +132,19 @@ class AwardsTab():
     def process_player_score(self, award, player):
         """Calls the method to work out the score for a player in a given category, then compares to see if it is the highest"""
 
-        # call the method to calcualte the score for that award
-        score = self.awards_definitions[award][1](player)
+        try: # we want to skip over instances where there was not enough data to produce a number
+            # call the method to calcualte the score for that award
+            score = self.awards_definitions[award][1](player)
 
-        # compare this with the current high score
-        try: # score might be blank, which causes an error
+            # compare this with the current high score
             if score > self.winners[award]["Highest Recorded Score"]:
                 self.winners[award]["Highest Recorded Score"] = score
                 self.winners[award]["Holder of Highest Score"] = player
             elif score == self.winners[award]["Highest Recorded Score"]:
-                self.winners[award]["Holder of Highest Score"] = "Tie"
+                if score == 0: # no-one has scored yet
+                    self.winners[award]["Holder of Highest Score"] = "-"
+                else: # multiple have the highest score
+                    self.winners[award]["Holder of Highest Score"] = "Tie"
         except TypeError:
             pass
     

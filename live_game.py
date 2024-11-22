@@ -12,7 +12,7 @@ class LiveGame():
         # collect key game meta info: !!
         self.opp_name_text = "Opponent"
         self.team_starting_on_O = "Opp Possession"
-        self.number_of_players_at_once = 5
+        self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
 
         # put a roster page on the main GUI

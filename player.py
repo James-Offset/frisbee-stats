@@ -92,11 +92,11 @@ class Player():
         self.marginal_stats = {}
         
         self.template_marginal_stats = {
-            "marginal offence conversion" : 0,
-            "marginal defence conversion" : 0,
-            "marginal o-line score" : 0,
-            "marginal d-line score" : 0,
-            "marginal total score" : 0,
+            "marginal offence conversion" : "-",
+            "marginal defence conversion" : "-",
+            "marginal o-line score" : "-",
+            "marginal d-line score" : "-",
+            "marginal total score" : "-",
         }
 
         # these also need to be displayed
@@ -135,18 +135,21 @@ class Player():
 
         for stat in self.display_list + self.extra_team_display:
 
-            # increment row number
-            row_number += 1
+            if stat == "name" or stat == "number":
+                pass # we don't want to display this info
+            else:
+                # increment row number
+                row_number += 1
 
-            # create a label for the stat description
-            stat_text = stat #!! capitalise later
-            self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.team_frame[self.live_game_ref], text=stat_text, font=('Arial', 16))
-            self.gui_labels_dicts[self.live_game_ref][stat].grid(row=row_number, column=0, sticky='ew')
+                # create a label for the stat description
+                stat_text = stat #!! capitalise later
+                self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.team_frame[self.live_game_ref], text=stat_text, font=('Arial', 16))
+                self.gui_labels_dicts[self.live_game_ref][stat].grid(row=row_number, column=0, sticky='ew')
 
-            # create a label for the data point
-            value_text = self.data_dict[self.live_game_ref]["pitch"][stat]
-            self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.team_frame[self.live_game_ref], text=value_text, font=('Arial', 16))
-            self.gui_labels_dicts[self.live_game_ref][stat].grid(row=row_number, column=1, sticky='ew')
+                # create a label for the data point
+                value_text = self.data_dict[self.live_game_ref]["pitch"][stat]
+                self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.team_frame[self.live_game_ref], text=value_text, font=('Arial', 16))
+                self.gui_labels_dicts[self.live_game_ref][stat].grid(row=row_number, column=1, sticky='ew')
             
 
     def add_player_to_gui_tab(self):
@@ -168,6 +171,10 @@ class Player():
             if column_number in self.parent.pf_separator_columns:
                 column_number += 1
         
+        # make sure the name and number are showing
+        for stat in ("name" , "number"):
+            self.gui_labels_dicts[self.live_game_ref][stat].config(text=self.template_zone_stats[stat])
+
 
     def update_point_data(self, stats_input, name_check):
         """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
@@ -190,12 +197,15 @@ class Player():
             
             #!! will want to calc display stats for the full team at some point
             if self.display_row_number < 0:
-                # update the text on the label for each stat on the roster tab
-                for stat in self.display_list:
-                    self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
+                    # update the text on the label for each stat on the roster tab
+                    for stat in self.display_list:
+                        if stat == "name" or stat == "number":
+                            pass # we don't want to display this info
+                        else:
+                            self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
 
-                for stat in self.extra_team_display:
-                    self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
+                    for stat in self.extra_team_display:
+                        self.gui_labels_dicts[data_set][stat].config(text=self.data_dict[data_set]["pitch"][stat])
             else:
 
                 # display those outputs
@@ -234,8 +244,20 @@ class Player():
     def calculate_comparison_stats(self):
         """Compares the on- and off- pitch performance for the player"""
 
+        # data sufficiency checks, player must have done and not done at least 5 offence and defence possessions
+        sufficient_data = False
+
+        if self.data_dict[self.live_game_ref]["bench"]["no. offence possessions"] < self.parent.requ_o_possessions:
+            pass
+        elif  self.data_dict[self.live_game_ref]["bench"]["no. defence possessions"] < self.parent.requ_d_possessions:
+            pass
+        elif self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] < self.parent.requ_o_possessions:
+            pass
+        elif self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] > self.parent.requ_d_possessions - 1:
+            sufficient_data = True
+
         # for the game that has just ended, calculate the stats
-        if self.data_dict[self.live_game_ref]["bench"]["no. offence possessions"] > 3: #!! placeholder for data sufficiency tests
+        if sufficient_data == True:
 
             # calculate performance scores
             self._calculate_performance_scores()
@@ -300,8 +322,13 @@ class Player():
                 if game == self.tournament_name: # skip this as it is not a real game
                     pass
                 else:
-                    number_of_games+=1
-                    stat_aggregate += self.marginal_stats[game][stat] 
+                    try:
+                        stat_aggregate += self.marginal_stats[game][stat] 
+                    except TypeError:
+                        pass # there must be insufficient data from a previous game.
+                    else:
+                        number_of_games+=1
+
             
             # average the result across all games
             averaged_result = round(stat_aggregate / number_of_games)
