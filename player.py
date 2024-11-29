@@ -116,7 +116,16 @@ class Player():
             "number of possessions played" : 0,
             "turnovers conceded" : 0,
             "turnovers won" : 0,
-        } # >>> copied from match class 
+
+            "offence poss without" : "-",
+            "defence poss without" : "-", #!! mayber delete these two
+            "with o conv" : "-",
+            "without o conv" : "-",
+            "with d conv" : "-",
+            "without d conv" : "-",
+            "offence entanglement factor" : "-",
+            "defence entanglement factor" : "-",
+        } # >>> partially copied from match class 
 
         for player in self.parent.roster:
             if player == self.name: # this is the player for this class, for which we can't compare
@@ -313,6 +322,9 @@ class Player():
             # calculate new weighted stats for the whole tournament
             self._calculate_tournament_marginal_stats()
 
+        # do the pair comparisons with teammates
+        self.calculate_teammate_conversions()
+
     def calculate_performance_scores(self, zone):
         """Calculates the o-line and d-line scores"""
         o_score_pt1 = (100 - self.data_dict[self.live_game_ref][zone]["offence conversion rate"]) * self.data_dict[self.live_game_ref][zone]["defence conversion rate"]
@@ -375,4 +387,71 @@ class Player():
             # update the gui for the whole tournament
             self.gui_labels_dicts[self.tournament_name][stat].config(text = self.data_dict[self.tournament_name]["pitch"][stat])
 
+    def calculate_teammate_conversions(self):
+        """At the end of the game, this method is called to calculate the offensive and deffensive conversion rates 
+        for the player in combination with each other player. This is then made marginal versus everyone else"""
+        
+        for teammate in self.parent.roster:
+            if teammate == self.name or self.name == self.parent.team_name:
+                pass
+            else:
+                # check for sufficient offensive possessions
+                op_with = self.teammate_records[self.live_game_ref][teammate]["no. offence possessions"]
+                op_without = self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] - op_with
+                self.teammate_records[self.live_game_ref][teammate]["offence poss without"] = op_without
+                o_ratio = op_with / (op_with + op_without)
 
+                if o_ratio < self.parent.player_v_player_ratio or 1-o_ratio < self.parent.player_v_player_ratio:
+                    pass
+                else: 
+                    # calcualte key inputs
+                    tc_with = self.teammate_records[self.live_game_ref][teammate]["turnovers conceded"]
+                    tc_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers conceded"] - tc_with
+
+                    # calculate and record conversion rate
+                    self.teammate_records[self.live_game_ref][teammate]["with o conv"] = round(100 * (1 - (tc_with / op_with)))
+                    self.teammate_records[self.live_game_ref][teammate]["without o conv"] = round(100 * (1 - (tc_without / op_without)))
+
+                # check for sufficient defensive possessions
+                dp_with = self.teammate_records[self.live_game_ref][teammate]["no. defence possessions"]
+                dp_without = self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] - dp_with
+                self.teammate_records[self.live_game_ref][teammate]["defence poss without"] = dp_without
+                d_ratio = dp_with / (dp_with + dp_without)
+
+                if d_ratio < self.parent.player_v_player_ratio or 1-d_ratio < self.parent.player_v_player_ratio:
+                    pass
+                else: 
+                    # calcualte key inputs
+                    tw_with = self.teammate_records[self.live_game_ref][teammate]["turnovers won"]
+                    tw_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers won"] - tw_with
+
+                    # calculate and record conversion rate
+                    self.teammate_records[self.live_game_ref][teammate]["with d conv"] = round(100 * (1 - (tw_with / dp_with)))
+                    self.teammate_records[self.live_game_ref][teammate]["without d conv"] = round(100 * (1 - (tw_without / dp_without)))
+
+    def calculate_entanglement_factor(self):                
+        """Calculate the entanglement factor with each player for o and d"""
+
+        for teammate in self.parent.roster:
+            if teammate == self.name:
+                pass
+            else:
+                for poss_type in ("offence", "defence"):
+                    stat = poss_type + " poss without"
+                    stat2 = "no. " + poss_type + " possessions"
+                    stat3 = poss_type + " entanglement factor"
+                    
+                    # fetch the number of possessions without the team mate
+                    poss_without = self.teammate_records[self.live_game_ref][teammate][stat]
+
+                    # fetch how the other player views this player
+                    other_poss_without = self.parent.roster[teammate].teammate_records[self.live_game_ref][self.name][stat]
+
+                    # fetch the total number of possessions played by the team 
+                    team_poss = self.parent.team_record.data_dict[self.live_game_ref]["pitch"][stat2]
+
+                    # calculate the entanglement factor
+                    ef = 1 - ((poss_without + other_poss_without) / team_poss) * 2
+                    self.teammate_records[self.live_game_ref][teammate][stat3] = round(ef, 2)
+                    #!! print(f"{self.live_game_ref} {self.name} and {teammate} {poss_type} ef = {ef}")
+        
