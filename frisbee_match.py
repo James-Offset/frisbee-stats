@@ -210,8 +210,9 @@ class FrisbeeGame():
             "turnovers conceded" : self.turnovers_conceded,
             "turnovers won" : self.turnovers_won,
         }
+        # >>> copied in each player class, at least for the teammate section
 
-        # save these in case we need them later
+        # save these in case we need them later !! check if used
         self.extra_stats = {
         }
 
@@ -293,13 +294,7 @@ class FrisbeeGame():
         # update the stats for each player on the pitch
         for player in self.parent.team.roster:
 
-            # if the player was on that point
-            if player in self.point_lineups[self.point_number]:
-                pass_name = player
-            else:
-                pass_name = self.parent.team_name
-
             # call the function for that player
-            self.parent.team.roster[player].update_point_data(self.point_stats_list, pass_name)
+            self.parent.team.roster[player].update_point_data(self.point_stats_list, self.point_lineups[self.point_number])
 
 

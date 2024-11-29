@@ -97,6 +97,43 @@ class Player():
             "total score",
         ]
 
+        self._create_teammates_dictionary()
+
+    def _create_teammates_dictionary(self):
+        """Adds a sub dictionary for each team mate into the dictionary of teammate comparison entries"""
+
+        # create a dictionry to store all the comparison data with the other players
+        self.teammate_records = {}
+
+        # create a template that will include the names of all the other players
+        self.teammate_list_template = {}
+
+        # create a template for what is used for team mate. 
+        self.teammate_template = {
+            "number of points played" : 0,
+            "no. offence possessions" : 0,
+            "no. defence possessions" : 0,
+            "number of possessions played" : 0,
+            "turnovers conceded" : 0,
+            "turnovers won" : 0,
+        } # >>> copied from match class 
+
+        for player in self.parent.roster:
+            if player == self.name: # this is the player for this class, for which we can't compare
+                pass
+            else:
+                # create a new entry for the team mate
+                self.add_teammate_to_list(player)
+
+    def add_teammate_to_list(self, player_name):
+        """When a new player is added to the roster, this methods adds that player to the team mate list for each other player"""
+
+        # add the player to the list for future games
+        self.teammate_list_template[player_name] = copy.deepcopy(self.teammate_template)
+
+        # retroactively add the player to the lists for established games
+        for game in self.teammate_records:
+            self.teammate_records[game][player_name] = copy.deepcopy(self.teammate_template)
 
     def prepare_to_receive_data(self, data_tab):
         """when a new stats roster tab is created this function creates sub-dictionaries to recieve data and adds the player details to the table"""
@@ -115,6 +152,9 @@ class Player():
         else:
             # add the player to the relevant stats tab
             self.add_player_to_gui_tab()
+            
+            # create a new sub-dictionary for the game
+            self.teammate_records[data_tab] = copy.deepcopy(self.teammate_list_template)
 
     def add_player_class_for_whole_team_to_gui(self):
         """Adds team info to the team frame on the stats page"""
@@ -168,11 +208,11 @@ class Player():
             self.gui_labels_dicts[self.live_game_ref][stat].config(text=self.template_zone_stats[stat])
 
 
-    def update_point_data(self, stats_input, name_check):
+    def update_point_data(self, stats_input, point_line_up):
         """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
 
         # check whether the player was on the pitch (or it's the team class)
-        if name_check == self.name:
+        if self.name in point_line_up:
             zone = "pitch"
         else:
             zone = "bench"
@@ -183,6 +223,14 @@ class Player():
             for game_event in stats_input:
                 # update each input stat in turn
                 self.data_dict[data_set][zone][game_event] += stats_input[game_event]
+
+                # add this information for the teammate subdictionary for each team mate on the pitch
+                if zone == "pitch" and self.name != self.parent.team_name:
+                    for teammate in point_line_up:
+                        if teammate == self.name: # skip comparison with itself
+                            pass
+                        else:
+                            self.teammate_records[data_set][teammate][game_event] += stats_input[game_event]
 
             # calculate new output stats for that data set
             self.process_stats(data_set, zone)

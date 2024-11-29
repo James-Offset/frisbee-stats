@@ -232,6 +232,10 @@ class Team():
         # increment the row for which this player will be displayed on the gui
         self.display_row_number += 1
 
+        # create a new teammate data profile in each other player class
+        for teammate in self.roster:
+            self.roster[teammate].add_teammate_to_list(player_name)
+
         # create a new class
         self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number)
 
