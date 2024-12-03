@@ -27,6 +27,10 @@ class Team():
         # copy out key parent parts
         self.parent = parent
 
+        # set the threshold of what counts a significant ratio of data
+        self.player_v_team_ratio = 0.2
+        self.player_v_player_ratio = 0.25
+
         # create a dictionary to hold the player classes
         self.number_of_players = 0 
         self.display_row_number = 0
@@ -55,7 +59,6 @@ class Team():
 
         # create the awards tab
         self.awards_class = AwardsTab(self)
-
 
     def build_game_stats_page(self, tab_name):
         """Prepares the team records and builds the two sections of the gui tabs"""
@@ -232,6 +235,10 @@ class Team():
         # increment the row for which this player will be displayed on the gui
         self.display_row_number += 1
 
+        # create a new teammate data profile in each other player class
+        for teammate in self.roster:
+            self.roster[teammate].add_teammate_to_list(player_name)
+
         # create a new class
         self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number)
 
@@ -261,9 +268,9 @@ class Team():
 
         # work out the minimum number of possessions required to be considered noteworthy (20%)
         team_o_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
-        self.requ_o_possessions = round(team_o_poss * 0.2)
+        self.requ_o_possessions = round(team_o_poss * self.player_v_team_ratio)
         team_d_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
-        self.requ_d_possessions = round(team_d_poss * 0.2)
+        self.requ_d_possessions = round(team_d_poss * self.player_v_team_ratio)
 
         # work out the performance of the team
         self.team_record.update_team_performance()
@@ -271,6 +278,10 @@ class Team():
         # prompt each player class to calcualte their end of game calculations
         for player in self.roster:
             self.roster[player].calculate_comparison_stats()
+        
+        # then prompt each player to calc their entanglement factors (all other player calcs must have resolved first)
+        for player in self.roster:
+            self.roster[player].calculate_entanglement_factor()
         
         # update awards
         self.awards_class.calcualte_awards()

@@ -14,6 +14,9 @@ class LiveGame():
         self.team_starting_on_O = "Opp Possession"
         self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
+        
+        # set the second half flag
+        self.second_half = False
 
         # put a roster page on the main GUI
         self._build_live_page()
@@ -140,6 +143,10 @@ class LiveGame():
         self.entry_message.set(self.default_count_message)
 
         row_count_memory+=4
+        self.half_time_button = ttk.Button(self.live_page, text="Half Time", command=self.half_time)
+        self.half_time_button.grid(row=row_count_memory, column=4)
+
+        row_count_memory+=2
         self.end_game_button = tk.Button(self.live_page, text="End Game", font=('Arial', 18), command=self.end_game)
         self.end_game_button.grid(row=row_count_memory, column=4)
 
@@ -163,6 +170,12 @@ class LiveGame():
         else:
             new_posession_text = "Opp Possession"
         self.posession_text.set(new_posession_text)
+
+        # activate or deactivate the half time button as necessary
+        if self.second_half == True or self.turnover_count > 0:
+            self.half_time_button.state(["disabled"])
+        else:
+            self.half_time_button.state(["!disabled"])
 
     def update_player_total(self):
         """When a checkbox is checked or unchecked, we update the count of checked boxes"""
@@ -199,9 +212,6 @@ class LiveGame():
         self.entry_message.set(self.default_count_message)
         self.player_count_display.config(bg='gray90')
 
-        # switch the possession indicator
-        self.switch_possession_text()
-
         # call the end point function in the active game
         new_score_text = self.parent.games[self.parent.active_game].evaluate_point(self.turnover_count, active_players)
 
@@ -211,6 +221,21 @@ class LiveGame():
         # reset the turnover count
         self.turnover_count = 0 
         self.turnover_count_value.set(self.turnover_count)
+
+        # switch the possession indicator
+        self.switch_possession_text()
+
+    def half_time(self):
+        """Indicates that it is half time and switches possession"""
+
+        # change the record for the team that started on o
+        self.parent.games[self.parent.active_game].half_time_poss_switch()
+
+        # deactivate button
+        self.second_half = True
+
+        # change the text indication
+        self.switch_possession_text()
 
     def end_game(self):
         """Ends the live game"""

@@ -97,6 +97,52 @@ class Player():
             "total score",
         ]
 
+        self._create_teammates_dictionary()
+
+    def _create_teammates_dictionary(self):
+        """Adds a sub dictionary for each team mate into the dictionary of teammate comparison entries"""
+
+        # create a dictionry to store all the comparison data with the other players
+        self.teammate_records = {}
+
+        # create a template that will include the names of all the other players
+        self.teammate_list_template = {}
+
+        # create a template for what is used for team mate. 
+        self.teammate_template = {
+            "number of points played" : 0,
+            "no. offence possessions" : 0,
+            "no. defence possessions" : 0,
+            "number of possessions played" : 0,
+            "turnovers conceded" : 0,
+            "turnovers won" : 0,
+
+            "offence poss without" : "-",
+            "defence poss without" : "-", #!! mayber delete these two
+            "with o conv" : "-",
+            "without o conv" : "-",
+            "with d conv" : "-",
+            "without d conv" : "-",
+            "offence entanglement factor" : "-",
+            "defence entanglement factor" : "-",
+        } # >>> partially copied from match class 
+
+        for player in self.parent.roster:
+            if player == self.name: # this is the player for this class, for which we can't compare
+                pass
+            else:
+                # create a new entry for the team mate
+                self.add_teammate_to_list(player)
+
+    def add_teammate_to_list(self, player_name):
+        """When a new player is added to the roster, this methods adds that player to the team mate list for each other player"""
+
+        # add the player to the list for future games
+        self.teammate_list_template[player_name] = copy.deepcopy(self.teammate_template)
+
+        # retroactively add the player to the lists for established games
+        for game in self.teammate_records:
+            self.teammate_records[game][player_name] = copy.deepcopy(self.teammate_template)
 
     def prepare_to_receive_data(self, data_tab):
         """when a new stats roster tab is created this function creates sub-dictionaries to recieve data and adds the player details to the table"""
@@ -115,6 +161,9 @@ class Player():
         else:
             # add the player to the relevant stats tab
             self.add_player_to_gui_tab()
+            
+            # create a new sub-dictionary for the game
+            self.teammate_records[data_tab] = copy.deepcopy(self.teammate_list_template)
 
     def add_player_class_for_whole_team_to_gui(self):
         """Adds team info to the team frame on the stats page"""
@@ -168,11 +217,11 @@ class Player():
             self.gui_labels_dicts[self.live_game_ref][stat].config(text=self.template_zone_stats[stat])
 
 
-    def update_point_data(self, stats_input, name_check):
+    def update_point_data(self, stats_input, point_line_up):
         """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
 
         # check whether the player was on the pitch (or it's the team class)
-        if name_check == self.name:
+        if self.name in point_line_up:
             zone = "pitch"
         else:
             zone = "bench"
@@ -183,6 +232,14 @@ class Player():
             for game_event in stats_input:
                 # update each input stat in turn
                 self.data_dict[data_set][zone][game_event] += stats_input[game_event]
+
+                # add this information for the teammate subdictionary for each team mate on the pitch
+                if zone == "pitch" and self.name != self.parent.team_name:
+                    for teammate in point_line_up:
+                        if teammate == self.name: # skip comparison with itself
+                            pass
+                        else:
+                            self.teammate_records[data_set][teammate][game_event] += stats_input[game_event]
 
             # calculate new output stats for that data set
             self.process_stats(data_set, zone)
@@ -265,6 +322,9 @@ class Player():
             # calculate new weighted stats for the whole tournament
             self._calculate_tournament_marginal_stats()
 
+        # do the pair comparisons with teammates
+        self.calculate_teammate_conversions()
+
     def calculate_performance_scores(self, zone):
         """Calculates the o-line and d-line scores"""
         o_score_pt1 = (100 - self.data_dict[self.live_game_ref][zone]["offence conversion rate"]) * self.data_dict[self.live_game_ref][zone]["defence conversion rate"]
@@ -327,4 +387,71 @@ class Player():
             # update the gui for the whole tournament
             self.gui_labels_dicts[self.tournament_name][stat].config(text = self.data_dict[self.tournament_name]["pitch"][stat])
 
+    def calculate_teammate_conversions(self):
+        """At the end of the game, this method is called to calculate the offensive and deffensive conversion rates 
+        for the player in combination with each other player. This is then made marginal versus everyone else"""
+        
+        for teammate in self.parent.roster:
+            if teammate == self.name or self.name == self.parent.team_name:
+                pass
+            else:
+                # check for sufficient offensive possessions
+                op_with = self.teammate_records[self.live_game_ref][teammate]["no. offence possessions"]
+                op_without = self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] - op_with
+                self.teammate_records[self.live_game_ref][teammate]["offence poss without"] = op_without
+                o_ratio = op_with / (op_with + op_without)
 
+                if o_ratio < self.parent.player_v_player_ratio or 1-o_ratio < self.parent.player_v_player_ratio:
+                    pass
+                else: 
+                    # calcualte key inputs
+                    tc_with = self.teammate_records[self.live_game_ref][teammate]["turnovers conceded"]
+                    tc_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers conceded"] - tc_with
+
+                    # calculate and record conversion rate
+                    self.teammate_records[self.live_game_ref][teammate]["with o conv"] = round(100 * (1 - (tc_with / op_with)))
+                    self.teammate_records[self.live_game_ref][teammate]["without o conv"] = round(100 * (1 - (tc_without / op_without)))
+
+                # check for sufficient defensive possessions
+                dp_with = self.teammate_records[self.live_game_ref][teammate]["no. defence possessions"]
+                dp_without = self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] - dp_with
+                self.teammate_records[self.live_game_ref][teammate]["defence poss without"] = dp_without
+                d_ratio = dp_with / (dp_with + dp_without)
+
+                if d_ratio < self.parent.player_v_player_ratio or 1-d_ratio < self.parent.player_v_player_ratio:
+                    pass
+                else: 
+                    # calcualte key inputs
+                    tw_with = self.teammate_records[self.live_game_ref][teammate]["turnovers won"]
+                    tw_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers won"] - tw_with
+
+                    # calculate and record conversion rate
+                    self.teammate_records[self.live_game_ref][teammate]["with d conv"] = round(100 * (1 - (tw_with / dp_with)))
+                    self.teammate_records[self.live_game_ref][teammate]["without d conv"] = round(100 * (1 - (tw_without / dp_without)))
+
+    def calculate_entanglement_factor(self):                
+        """Calculate the entanglement factor with each player for o and d"""
+
+        for teammate in self.parent.roster:
+            if teammate == self.name:
+                pass
+            else:
+                for poss_type in ("offence", "defence"):
+                    stat = poss_type + " poss without"
+                    stat2 = "no. " + poss_type + " possessions"
+                    stat3 = poss_type + " entanglement factor"
+                    
+                    # fetch the number of possessions without the team mate
+                    poss_without = self.teammate_records[self.live_game_ref][teammate][stat]
+
+                    # fetch how the other player views this player
+                    other_poss_without = self.parent.roster[teammate].teammate_records[self.live_game_ref][self.name][stat]
+
+                    # fetch the total number of possessions played by the team 
+                    team_poss = self.parent.team_record.data_dict[self.live_game_ref]["pitch"][stat2]
+
+                    # calculate the entanglement factor
+                    ef = 1 - ((poss_without + other_poss_without) / team_poss) * 2
+                    self.teammate_records[self.live_game_ref][teammate][stat3] = round(ef, 2)
+                    #!! print(f"{self.live_game_ref} {self.name} and {teammate} {poss_type} ef = {ef}")
+        
