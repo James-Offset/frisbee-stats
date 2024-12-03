@@ -146,8 +146,17 @@ class FrisbeeGame():
             "Players on Pitch" : [],
         }
 
-        #!! Fix this
+        #!! Fix this and te half time function below
         self.defence_start = 'Us'
+
+        self.establish_start_indicator(False)
+
+        self.point_number = 0
+        self.live_team_score = 0
+        self.live_opp_score = 0
+
+    def establish_start_indicator(self, half_time):
+        """At the beginning of the game, or after half time, set the indicator for who starts on offence"""
 
         # record a modifier for who starts on defence
         if self.defence_start == 'Us':
@@ -155,10 +164,9 @@ class FrisbeeGame():
         else:
             self.o_start_indicator = 1
 
-        self.point_number = 0
-        self.live_team_score = 0
-        self.live_opp_score = 0
-
+        if half_time == True:
+            # switch the starting team
+            self.o_start_indicator = self.o_start_indicator * -1
 
     def evaluate_point(self, number_of_turns, list_of_active_players):
         """Takes the information from a completed point and updates necessary variables"""
@@ -297,4 +305,7 @@ class FrisbeeGame():
             # call the function for that player
             self.parent.team.roster[player].update_point_data(self.point_stats_list, self.point_lineups[self.point_number])
 
+    def half_time_poss_switch(self):
+        """Changes the indicator of who started on offence following half time"""
 
+        self.establish_start_indicator(True)
