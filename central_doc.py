@@ -213,8 +213,6 @@ class MainGUI():
             
             self.games[self.active_game].crunch_data_from_import(self.raw_game_data[name_of_considered_game]['Turns per Point'], self.raw_game_data[name_of_considered_game]["Active Players"])
             
-            self.create_DF_from_import()
-            
             self.live_game.end_game()
 
     def complete_set_up(self):
@@ -306,11 +304,6 @@ class MainGUI():
             # create a live game tab
             self.live_game_active = True
             self.live_game = LiveGame(self, self.opp_name)
-
-    def create_DF_from_import(self):
-        """Importing data doesn't use Live Game tab properly, so data doesn't get added to the main Data Frame"""
-
-        pass
 
 # call the main code
 if __name__ == "__main__":

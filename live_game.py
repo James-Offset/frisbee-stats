@@ -157,7 +157,6 @@ class LiveGame():
         """Increments the turnover count when the plus button is pressed"""
         self.turnover_count += 1
         self.turnover_count_value.set(self.turnover_count)
-        self.register_new_game_event("turnover")
         self.switch_possession_text()
 
     def minus_function(self):
@@ -180,33 +179,7 @@ class LiveGame():
             self.half_time_button.state(["disabled"])
         else:
             self.half_time_button.state(["!disabled"])
-
-    def register_new_game_event(self, event):
-        """Adds a line of data to the right dataframe when a turnover or score is recorded"""
-        
-        # create an empty list for the new row
-        new_row = []
-
-        # success measure
-        if event == "turnover":
-            new_row.append(0)
-        else:
-            new_row.append(1)
-
-        # opposition name
-        new_row.append(self.opp_name_text)
-
-        # player records
-        for player in self.parent.team.roster:
-            # log a 1 or a zero depending on whether the player is on the field
-            new_row.append(self.roster_widgets[player]["checkbox_value"].get())
-
-        # add new row to the right DataFrame
-        if self.posession_text.get() == "Opp Possession":
-            self.parent.d_df.loc[len(self.parent.d_df)] = new_row
-        else:
-            self.parent.o_df.loc[len(self.parent.o_df)] = new_row
-    
+   
 
     def update_player_total(self):
         """When a checkbox is checked or unchecked, we update the count of checked boxes"""
@@ -228,9 +201,6 @@ class LiveGame():
 
     def end_point(self):
         """At the end of the point, log all the data and clear the roster for the next point"""
-
-        # update the main DataFrame
-        self.register_new_game_event("Score")
 
         # record who was playing
         active_players = []

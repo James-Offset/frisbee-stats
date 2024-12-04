@@ -188,6 +188,9 @@ class FrisbeeGame():
         self.o_start_indicator = 1 - (self.team_point * 2)
 
         self._update_player_stats()
+        
+        # update the main DataFrame
+        self.update_main_data_frame()
 
         # feed the score text value back to the live game tab
         return self.live_score_text
@@ -304,6 +307,41 @@ class FrisbeeGame():
 
             # call the function for that player
             self.parent.team.roster[player].update_point_data(self.point_stats_list, self.point_lineups[self.point_number])
+
+    def update_main_data_frame(self):
+        """Looks at what happened during the point and updates the main data frame"""
+        
+        # create an empty list for the new row of data
+        new_row = []
+
+        # success measure, start with failures (turnovers)
+        new_row.append(0)
+        
+        # opposition name
+        new_row.append(self.name)
+
+        # player records
+        for player in self.parent.team.roster:
+            # log a 1 or a zero depending on whether the player is on the field
+            if player in self.point_lineups[self.point_number]:
+                new_row.append(1)
+            else:
+                new_row.append(0)
+
+        for i in range(self.turnovers_conceded):
+            self.parent.o_df.loc[len(self.parent.o_df)] = new_row
+
+        if self.team_point == 0:
+            self.parent.d_df.loc[len(self.parent.d_df)] = new_row
+
+        # switch to team successes
+        new_row[0] = 1
+
+        for i in range(self.turnovers_won):
+            self.parent.d_df.loc[len(self.parent.d_df)] = new_row
+
+        if self.team_point == 1:
+            self.parent.o_df.loc[len(self.parent.o_df)] = new_row
 
     def half_time_poss_switch(self):
         """Changes the indicator of who started on offence following half time"""
