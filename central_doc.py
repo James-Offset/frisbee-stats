@@ -7,6 +7,8 @@ Now we are changing the way we do the scores so that we have comparisons with ea
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+import pandas as pd
+import copy
 
 """My Code"""
 from data_extractor import DataExtractor
@@ -46,8 +48,11 @@ class MainGUI():
         self.game_import = False
         self.live_game_active = False
         self.metadata_flag = 0
-                
 
+        #!! Set up some temporary opp names
+        self.opp_name_count = 0
+
+                
         # run the app
         self.root.mainloop()
         print("check")
@@ -207,6 +212,9 @@ class MainGUI():
                     break
             
             self.games[self.active_game].crunch_data_from_import(self.raw_game_data[name_of_considered_game]['Turns per Point'], self.raw_game_data[name_of_considered_game]["Active Players"])
+            
+            self.create_DF_from_import()
+            
             self.live_game.end_game()
 
     def complete_set_up(self):
@@ -222,6 +230,19 @@ class MainGUI():
         # change the status of buttons
         self.metadata_button.state(["disabled"])
         self.new_player_button.state(["!disabled"])
+
+        
+        # set up storage for tournament data for machine learning
+
+        self.o_df = pd.DataFrame({
+            "Success" : [],
+            "Opposition" : [],
+        })
+
+        self.d_df = pd.DataFrame({
+            "Success" : [],
+            "Opposition" : [],
+        })
         
 
     def manual_player_input(self):
@@ -278,10 +299,18 @@ class MainGUI():
             # add the players to the new stats page
             self.team.add_players_to_stats_page(game_class_name)
 
+            #!! Get new game metadata here
+            self.opp_name_count += 1
+            self.opp_name = "Opp " + str(self.opp_name_count)
+
             # create a live game tab
             self.live_game_active = True
-            self.live_game = LiveGame(self)
+            self.live_game = LiveGame(self, self.opp_name)
 
+    def create_DF_from_import(self):
+        """Importing data doesn't use Live Game tab properly, so data doesn't get added to the main Data Frame"""
+
+        pass
 
 # call the main code
 if __name__ == "__main__":

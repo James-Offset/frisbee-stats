@@ -242,6 +242,9 @@ class Team():
         # create a new class
         self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number)
 
+        # add the player to the home page data frame
+        self.add_player_to_main_DF(player_name)
+
         # add the player to the existing stats pages on the GUI
         for tab_name in self.game_stats_pages:
             self.roster[player_name].prepare_to_receive_data(tab_name)
@@ -262,6 +265,22 @@ class Team():
         for separator in self.pf_separator_elements[tab_name]:
             self.pf_separator_elements[tab_name][separator].grid(row=0 , rowspan=self.display_row_number+1, column = int(separator), sticky='ns', padx=2)
 
+    def add_player_to_main_DF(self, player_name):
+        """When a new player is added to the roster, this method adds a new column to the DataFrames"""
+
+        # add a new column of zeros for the o possessions
+        new_o_column = []
+        for possession in self.parent.o_df["Success"]:
+            new_o_column.append(0)
+        
+        self.parent.o_df[player_name] = new_o_column
+
+        # add a new column of zeros for the d possessions
+        new_d_column = []
+        for possession in self.parent.d_df["Success"]:
+            new_o_column.append(0)
+        
+        self.parent.d_df[player_name] = new_d_column
 
     def end_of_game_calcs(self):
         """Calls each player class to run their comparison calcs"""
