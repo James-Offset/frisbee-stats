@@ -268,6 +268,9 @@ class Team():
     def add_player_to_main_DF(self, player_name):
         """When a new player is added to the roster, this method adds a new column to the DataFrames"""
 
+        # add the new player to the list of data frame headings
+        self.parent.data_frame_headings.append(player_name)
+
         # add a new column of zeros for the o possessions
         new_o_column = []
         for possession in self.parent.o_df["Success"]:
@@ -278,7 +281,7 @@ class Team():
         # add a new column of zeros for the d possessions
         new_d_column = []
         for possession in self.parent.d_df["Success"]:
-            new_o_column.append(0)
+            new_d_column.append(0)
         
         self.parent.d_df[player_name] = new_d_column
 

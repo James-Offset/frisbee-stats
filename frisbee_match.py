@@ -57,12 +57,13 @@ from tkinter import messagebox
 
 
 class FrisbeeGame():
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, opp_name):
         """This stores the core infomation"""
 
         # copy out useful variables
         self.parent = parent
         self.name = name
+        self.opp_name = opp_name
 
         # create a new tab in the GUI
         self.game_page = tk.Frame(self.parent.notebook)
@@ -316,14 +317,11 @@ class FrisbeeGame():
 
         # success measure, start with failures (turnovers)
         new_row.append(0)
-        
-        # opposition name
-        new_row.append(self.name)
 
         # player records
-        for player in self.parent.team.roster:
+        for factor in self.parent.data_frame_headings:
             # log a 1 or a zero depending on whether the player is on the field
-            if player in self.point_lineups[self.point_number]:
+            if factor in self.point_lineups[self.point_number] + [self.opp_name]:
                 new_row.append(1)
             else:
                 new_row.append(0)
