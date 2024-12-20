@@ -3,20 +3,23 @@
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+import pandas as pd
+import copy
 
 class LiveGame():
-    def __init__(self, parent):
+    def __init__(self, parent, opponent):
         # copy out key parent parts
         self.parent = parent
 
         # collect key game meta info: !!
-        self.opp_name_text = "Opponent"
+        self.opp_name_text = opponent
         self.team_starting_on_O = "Opp Possession"
         self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
         
         # set the second half flag
         self.second_half = False
+
 
         # put a roster page on the main GUI
         self._build_live_page()
@@ -176,6 +179,7 @@ class LiveGame():
             self.half_time_button.state(["disabled"])
         else:
             self.half_time_button.state(["!disabled"])
+   
 
     def update_player_total(self):
         """When a checkbox is checked or unchecked, we update the count of checked boxes"""

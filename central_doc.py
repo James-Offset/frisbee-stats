@@ -7,6 +7,11 @@ Now we are changing the way we do the scores so that we have comparisons with ea
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.model_selection import GridSearchCV
 
 """My Code"""
 from data_extractor import DataExtractor
@@ -46,8 +51,11 @@ class MainGUI():
         self.game_import = False
         self.live_game_active = False
         self.metadata_flag = 0
-                
 
+        #!! Set up some temporary opp names
+        self.opp_name_count = 0
+
+                
         # run the app
         self.root.mainloop()
         print("check")
@@ -110,6 +118,10 @@ class MainGUI():
         self.new_game_button = ttk.Button(self.home_page, text="Start New Game", command=self.start_new_game)
         self.new_game_button.pack(padx=20, pady=20)
 
+        # add a button to run the analysis
+        self.ml_button = ttk.Button(self.home_page, text="Do Machine Learning!", command=self.run_machine_learning_analysis)
+        self.ml_button.pack(padx=20, pady=20)
+
         # disable buttons not immediately useful
         self.new_game_button.state(["disabled"])
         self.new_player_button.state(["disabled"])
@@ -167,9 +179,12 @@ class MainGUI():
             self.data_extracted = True
 
             # Tournament metadata for input
-            self.tournament_name = "MIR2017"
-            self.team_name = "Mythago"
-            self.number_of_players_at_once = 5
+            #self.tournament_name = "MIR2017"
+            #self.team_name = "Mythago"
+            #!!self.number_of_players_at_once = 5
+            self.tournament_name = "Glasto 2019"
+            self.team_name = "Mythagone"
+            self.number_of_players_at_once = 7
 
             # now we have the metadata, we can complete the set up
             self.complete_set_up()
@@ -207,6 +222,7 @@ class MainGUI():
                     break
             
             self.games[self.active_game].crunch_data_from_import(self.raw_game_data[name_of_considered_game]['Turns per Point'], self.raw_game_data[name_of_considered_game]["Active Players"])
+            
             self.live_game.end_game()
 
     def complete_set_up(self):
@@ -222,6 +238,18 @@ class MainGUI():
         # change the status of buttons
         self.metadata_button.state(["disabled"])
         self.new_player_button.state(["!disabled"])
+
+        
+        # set up storage for tournament data for machine learning
+        self.o_df = pd.DataFrame({
+            "Success" : [],
+        })
+
+        self.d_df = pd.DataFrame({
+            "Success" : [],
+        })
+
+        self.data_frame_headings = []
         
 
     def manual_player_input(self):
@@ -263,11 +291,18 @@ class MainGUI():
             # increment game number
             self.number_of_games += 1
 
+            #!! Get new game metadata here
+            self.opp_name_count += 1
+            self.opp_name = "Opp " + str(self.opp_name_count)
+
+            # add the new opposition team to the main DF (same as for a player)
+            self.team.add_player_to_main_DF(self.opp_name)
+
             # Assign a name to the game
             game_class_name = "Game " + str(self.number_of_games)
 
             # create a new class with the assembled input data
-            self.games[game_class_name] = FrisbeeGame(self, game_class_name)
+            self.games[game_class_name] = FrisbeeGame(self, game_class_name, self.opp_name)
 
             # make a note of what the active game is called
             self.active_game = game_class_name
@@ -280,7 +315,84 @@ class MainGUI():
 
             # create a live game tab
             self.live_game_active = True
-            self.live_game = LiveGame(self)
+            self.live_game = LiveGame(self, self.opp_name)
+
+    def run_machine_learning_analysis(self):
+        """When called this method will run all the necessary functions to produce the player coefficients"""
+
+        # create our matricies that capture the x and y data for machine learning
+        self.ml_poss_factors_o = self.o_df.drop(columns=["Success"])
+        self.ml_success_o = self.o_df["Success"]
+        
+        # split the data into training and test datasets
+        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.2, random_state=14)
+
+        # Initialize logistic regression model with L2 regularization (default)
+        model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
+
+        # Fit the model to the training data
+        model.fit(x_train_o, y_train_o)
+
+        # Predict on the test set
+        y_pred = model.predict(x_test_o)
+
+        # Evaluate performance
+        print("Accuracy:", accuracy_score(y_test_o, y_pred))
+        print("\nConfusion Matrix:\n", confusion_matrix(y_test_o, y_pred))
+        print("\nClassification Report:\n", classification_report(y_test_o, y_pred))
+
+        # Get the coefficients
+        coefficients = model.coef_[0]  # Coefficients for each feature
+        players = self.ml_poss_factors_o.columns            # Feature names
+
+        # Combine into a DataFrame for easy interpretation
+        player_performance = pd.DataFrame({
+            'Player': players,
+            'Impact': coefficients
+        }).sort_values(by='Impact', ascending=False)
+
+        print(player_performance)
+
+        #def refine_parameters(self):
+        #"""Uses cross validation to refine the machine learning model"""
+
+        # Define the parameter grid
+        param_grid = {
+            'C': [0.01, 0.1, 0.5, 1],  # Inverse of regularization strength
+            'penalty': ['l2'],
+            'solver': ['lbfgs'],
+        }
+
+        # Initialize the grid search
+        grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=3, scoring='accuracy' ,return_train_score=True, verbose=10)
+        grid_search.fit(x_train_o, y_train_o)
+
+        # Best parameters
+        print("Best parameters:", grid_search.best_params_)
+
+        # show the parameters for the best version
+        best_model = grid_search.best_estimator_
+        print(best_model.score(x_test_o, y_test_o))
+
+        # Predict on the test set
+        y_pred = best_model.predict(x_test_o)
+
+        # Evaluate performance
+        print("Accuracy:", accuracy_score(y_test_o, y_pred))
+        print("\nConfusion Matrix:\n", confusion_matrix(y_test_o, y_pred))
+        print("\nClassification Report:\n", classification_report(y_test_o, y_pred))
+
+        # Get the coefficients
+        coefficients = best_model.coef_[0]  # Coefficients for each feature
+        players = self.ml_poss_factors_o.columns            # Feature names
+
+        # Combine into a DataFrame for easy interpretation
+        player_performance = pd.DataFrame({
+            'Player': players,
+            'Impact': coefficients
+        }).sort_values(by='Impact', ascending=False)
+
+        print(player_performance)
 
 
 # call the main code
