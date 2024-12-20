@@ -16,7 +16,8 @@ class DataExtractor():
         current_directory = os.path.dirname(os.path.abspath(__file__))
 
         # build the filename
-        stock_filename = "Data from Mens Indoor Regionals.xlsx"
+        #!!stock_filename = "Data from Mens Indoor Regionals.xlsx"
+        stock_filename = "Glasto 2019.xlsx"
         path_to_data = os.path.join(current_directory, stock_filename)
 
         # open the excel doc

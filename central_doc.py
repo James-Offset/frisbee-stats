@@ -11,6 +11,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.model_selection import GridSearchCV
 
 """My Code"""
 from data_extractor import DataExtractor
@@ -178,9 +179,12 @@ class MainGUI():
             self.data_extracted = True
 
             # Tournament metadata for input
-            self.tournament_name = "MIR2017"
-            self.team_name = "Mythago"
-            self.number_of_players_at_once = 5
+            #self.tournament_name = "MIR2017"
+            #self.team_name = "Mythago"
+            #!!self.number_of_players_at_once = 5
+            self.tournament_name = "Glasto 2019"
+            self.team_name = "Mythagone"
+            self.number_of_players_at_once = 7
 
             # now we have the metadata, we can complete the set up
             self.complete_set_up()
@@ -321,7 +325,7 @@ class MainGUI():
         self.ml_success_o = self.o_df["Success"]
         
         # split the data into training and test datasets
-        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.2, random_state=10)
+        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.2, random_state=14)
 
         # Initialize logistic regression model with L2 regularization (default)
         model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
@@ -349,6 +353,46 @@ class MainGUI():
 
         print(player_performance)
 
+        #def refine_parameters(self):
+        #"""Uses cross validation to refine the machine learning model"""
+
+        # Define the parameter grid
+        param_grid = {
+            'C': [0.01, 0.1, 0.5, 1],  # Inverse of regularization strength
+            'penalty': ['l2'],
+            'solver': ['lbfgs'],
+        }
+
+        # Initialize the grid search
+        grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=3, scoring='accuracy' ,return_train_score=True, verbose=10)
+        grid_search.fit(x_train_o, y_train_o)
+
+        # Best parameters
+        print("Best parameters:", grid_search.best_params_)
+
+        # show the parameters for the best version
+        best_model = grid_search.best_estimator_
+        print(best_model.score(x_test_o, y_test_o))
+
+        # Predict on the test set
+        y_pred = best_model.predict(x_test_o)
+
+        # Evaluate performance
+        print("Accuracy:", accuracy_score(y_test_o, y_pred))
+        print("\nConfusion Matrix:\n", confusion_matrix(y_test_o, y_pred))
+        print("\nClassification Report:\n", classification_report(y_test_o, y_pred))
+
+        # Get the coefficients
+        coefficients = best_model.coef_[0]  # Coefficients for each feature
+        players = self.ml_poss_factors_o.columns            # Feature names
+
+        # Combine into a DataFrame for easy interpretation
+        player_performance = pd.DataFrame({
+            'Player': players,
+            'Impact': coefficients
+        }).sort_values(by='Impact', ascending=False)
+
+        print(player_performance)
 
 
 # call the main code
