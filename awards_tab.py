@@ -46,18 +46,52 @@ class AwardsTab():
             }
 
     def _create_notebook_tab(self):
-        """Creates a new tab in the notebook and adds gui elements"""
+        """Creates a new tab in the notebook and sets up scroll capability"""
 
         # create the new tab
-        self.gui_page = tk.Frame(self.parent.parent.notebook)
-        self.gui_page.pack()
-        tab_label = "Awards"
-        self.parent.parent.notebook.add(self.gui_page, text=tab_label)
+        self.tab_page = tk.Frame(self.parent.parent.notebook)
+        self.tab_page.pack()
+        self.parent.parent.notebook.add(self.tab_page, text="Awards")
+
+        # create the canvas and scrollbar
+        self.canvas = tk.Canvas(self.tab_page)
+        self.v_scrollbar = ttk.Scrollbar(self.tab_page, orient='vertical', command=self.canvas.yview)
+        self.canvas['yscrollcommand'] = self.v_scrollbar.set
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.v_scrollbar.pack(side="right", fill="y")
+
+        # add a new frame to the canvas
+        self.awards_frame = tk.Frame(self.canvas)
+        self.scrollable_window = self.canvas.create_window((0,0), anchor='nw', window=self.awards_frame)
+
+        # extra scrolling functionality
+        self.awards_frame.bind("<Configure>", self.update_scroll_region)
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+        self.canvas.bind("<Configure>", self.resize_scrollable_frame)
+
+        # fill out the inner frame
+        self._create_awards_grid_content()
+
+    def resize_scrollable_frame(self, event):
+        # Ensure the frame width matches the canvas width
+        canvas_width = event.width
+        self.canvas.itemconfig(self.scrollable_window, width=canvas_width)
+
+    def update_scroll_region(self, event):
+        # Update the scroll region when the frame changes
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_mousewheel(self, event):
+        # Enable mousewheel scrolling
+        self.canvas.yview_scroll(-1 * int(event.delta / 120), "units")
+
+    def _create_awards_grid_content(self):
+        """"Adds the GUI label elements into a grid inside the scrollable frame"""
 
         # create a dictionary to hold the details of the GUI columns
         self.gui_columns = {
             "heading text" : ["Award", "Winner", "Description"],
-            "column weighting" : [2, 2, 2,],
+            "column weighting" : [2, 2, 2],
             "label elements" : {}
         }
 
@@ -70,20 +104,20 @@ class AwardsTab():
         column_number=0
         for column in self.gui_columns["heading text"]:
             # create a column
-            self.gui_page.columnconfigure(column_number, weight=self.gui_columns["column weighting"][column_number])
+            self.awards_frame.columnconfigure(column_number, weight=self.gui_columns["column weighting"][column_number])
         
             # add heading labels
             if "separator" in column:
-                self.gui_columns["label elements"][column] = ttk.Separator(self.gui_page, orient="vertical")
+                self.gui_columns["label elements"][column] = ttk.Separator(self.awards_frame, orient="vertical")
                 self.gui_columns["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=2)
             else:
-                self.gui_columns["label elements"][column] = tk.Label(self.gui_page, text=self.gui_columns["heading text"][column_number], font=('Arial', 18))
+                self.gui_columns["label elements"][column] = tk.Label(self.awards_frame, text=self.gui_columns["heading text"][column_number], font=('Arial', 18))
                 self.gui_columns["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
 
             column_number += 1
         
         # horizontal Separator
-        s0 = ttk.Separator(self.gui_page, orient='horizontal')
+        s0 = ttk.Separator(self.awards_frame, orient='horizontal')
         s0.grid(row=1, column = 0, sticky=tk.W + tk.E, columnspan=3 , pady=2)
 
         # add award columns
@@ -94,16 +128,17 @@ class AwardsTab():
             self.row_number += 1
 
             # add award label
-            self.gui_awards_titles[award] = tk.Label(self.gui_page, text=award, font=('Arial', 16))
+            self.gui_awards_titles[award] = tk.Label(self.awards_frame, text=award, font=('Arial', 16))
             self.gui_awards_titles[award].grid(row=self.row_number , column = 0, sticky=tk.W + tk.E, pady=4)
 
             # add award winner
-            self.gui_awards_winners[award] = tk.Label(self.gui_page, text="-", font=('Arial', 16))
+            self.gui_awards_winners[award] = tk.Label(self.awards_frame, text="-", font=('Arial', 16))
             self.gui_awards_winners[award].grid(row=self.row_number , column = 1, sticky=tk.W + tk.E, pady=4)
 
             # add award description
-            self.gui_awards_descriptions[award] = ttk.Label(self.gui_page, text=self.awards_definitions[award][0], font=('Arial', 12), wraplength = 200, justify= tk.CENTER)
+            self.gui_awards_descriptions[award] = ttk.Label(self.awards_frame, text=self.awards_definitions[award][0], font=('Arial', 12), wraplength = 200, justify= tk.CENTER)
             self.gui_awards_descriptions[award].grid(row=self.row_number , column = 2, pady=4)
+
 
     def calcualte_awards(self):
         """Calculates the scores for each player, and thus who wins the award"""

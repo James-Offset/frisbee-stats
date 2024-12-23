@@ -122,6 +122,13 @@ class MainGUI():
         self.ml_button = ttk.Button(self.home_page, text="Do Machine Learning!", command=self.run_machine_learning_analysis)
         self.ml_button.pack(padx=20, pady=20)
 
+        # add a save tournament info and load tournament info buttons
+        self.save_data = ttk.Button(self.home_page, text="Save Tournament Data", command=self.start_new_game)
+        self.save_data.pack(padx=20, pady=5)
+
+        self.load_data = ttk.Button(self.home_page, text="Load Tournament Data", command=self.start_new_game)
+        self.load_data.pack(padx=20, pady=5)
+
         # disable buttons not immediately useful
         self.new_game_button.state(["disabled"])
         self.new_player_button.state(["disabled"])
@@ -325,7 +332,7 @@ class MainGUI():
         self.ml_success_o = self.o_df["Success"]
         
         # split the data into training and test datasets
-        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.2, random_state=14)
+        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.25, random_state=14)
 
         # Initialize logistic regression model with L2 regularization (default)
         model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
