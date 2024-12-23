@@ -253,6 +253,22 @@ class Team():
             for separator in self.pf_separator_elements[tab_name]:
                 self.pf_separator_elements[tab_name][separator].grid(row=0 , rowspan=self.display_row_number+1, column = int(separator), sticky='ns', padx=2)
 
+        self._sort_player_order()
+
+    def _sort_player_order(self):
+        """When a new player is added to the roster, they need to be included at the right alphabetical location and all previous
+        displays should be updated"""
+
+        list_of_players = list(self.roster.keys())
+        list_of_players.sort()
+        player_order_number = 0
+        for player in list_of_players:
+            player_order_number += 1
+            self.roster[player].display_row_number = player_order_number
+
+            for game in self.game_stats_pages:
+                self.roster[player].update_display_rows(game)
+
 
     def add_players_to_stats_page(self, tab_name):
         """For a new stats page, we need to add a row for each player already on the roster"""

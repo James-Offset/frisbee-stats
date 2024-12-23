@@ -41,10 +41,13 @@ class MainGUI():
         # build notebook
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(expand=True, fill='both')
-        self.game_tabs = {}
 
         # set up key tabs
         self._build_homepage()
+        
+        # create a blank dictionary to store our game classes
+        self.games = {}
+        self.number_of_games = 0 
 
         # set up a few markers
         self.data_extracted = False
@@ -237,10 +240,6 @@ class MainGUI():
 
         # Create supporting classes
         self.team = Team(self)
-
-        # create a blank dictionary to store our game classes
-        self.games = {}
-        self.number_of_games = 0 
 
         # change the status of buttons
         self.metadata_button.state(["disabled"])

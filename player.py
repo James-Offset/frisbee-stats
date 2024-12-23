@@ -216,6 +216,11 @@ class Player():
         for stat in ("name" , "number"):
             self.gui_labels_dicts[self.live_game_ref][stat].config(text=self.template_zone_stats[stat])
 
+    def update_display_rows(self, game_tab):
+        """When a new player is added and the order of the players changes, this function changes the rows of the display elements"""
+
+        for element in self.gui_labels_dicts[game_tab]:
+            self.gui_labels_dicts[game_tab][element].grid_configure(row=self.display_row_number)
 
     def update_point_data(self, stats_input, point_line_up):
         """If a player was on the pitch for a point, this function will be called at the end to update the records for the player"""
