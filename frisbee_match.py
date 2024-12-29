@@ -57,13 +57,14 @@ from tkinter import messagebox
 
 
 class FrisbeeGame():
-    def __init__(self, parent, name, opp_name):
+    def __init__(self, parent, name, opp_name, defence_start):
         """This stores the core infomation"""
 
         # copy out useful variables
         self.parent = parent
         self.name = name
         self.opp_name = opp_name
+        self.defence_start = defence_start
 
         # create a new tab in the GUI
         self.game_page = tk.Frame(self.parent.notebook)
@@ -148,8 +149,6 @@ class FrisbeeGame():
             "Players on Pitch" : [],
         }
 
-        #!! Fix this and te half time function below
-        self.defence_start = 'Us'
 
         self.establish_start_indicator(False)
 

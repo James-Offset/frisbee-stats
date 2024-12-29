@@ -7,12 +7,12 @@ import pandas as pd
 import copy
 
 class LiveGame():
-    def __init__(self, parent, opponent):
+    def __init__(self, parent, opponent, game_number):
         # copy out key parent parts
         self.parent = parent
 
         # collect key game meta info: !!
-        self.opp_name_text = opponent
+        self.opp_name_text = "Game " + str(game_number) + " vs " + opponent
         self.team_starting_on_O = "Opp Possession"
         self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
@@ -246,9 +246,11 @@ class LiveGame():
 
         # call the function to do comparison stats calculations
         self.parent.team.end_of_game_calcs()
+
+        # reactivate the button for a new game
+        self.parent.new_game_button.state(["!disabled"])
         
         # close the live game tab
-        self.parent.live_game_active=False
         self.live_page.destroy()
 
 
