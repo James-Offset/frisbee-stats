@@ -191,8 +191,8 @@ class Team():
         else:
             if player_number < 0:
                 error_message = "Player number must be at least zero"
-            elif player_number > 99:
-                error_message = "Player number must be less than 100"
+            elif player_number > 999:
+                error_message = "Player number must be less than 1000"
             else:
                 # check if this number is already taken
                 for player in self.roster:

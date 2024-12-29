@@ -136,6 +136,7 @@ class FrisbeeGame():
         
         # record who playes each point
         self.point_lineups = {}
+        self.list_of_numbers_of_turns = []
 
         self.team_performance = {
             "Hold or Break" : [],
@@ -178,6 +179,9 @@ class FrisbeeGame():
         # copy out needed info
         self.number_of_turns = number_of_turns
         self.point_lineups[self.point_number] = list_of_active_players
+
+        # store the number of turns if we need to save the info later
+        self.list_of_numbers_of_turns.append(self.number_of_turns)
 
         # get the basic stats
         self._work_out_team_performance()

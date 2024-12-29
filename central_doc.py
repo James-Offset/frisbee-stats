@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.model_selection import GridSearchCV
+import json
 
 """My Code"""
 from data_extractor import DataExtractor
@@ -126,11 +127,11 @@ class MainGUI():
         self.ml_button.pack(padx=20, pady=20)
 
         # add a save tournament info and load tournament info buttons
-        self.save_data = ttk.Button(self.home_page, text="Save Tournament Data", command=self.start_new_game)
-        self.save_data.pack(padx=20, pady=5)
+        self.save_data_button = ttk.Button(self.home_page, text="Save Tournament Data", command=self.save_data)
+        self.save_data_button.pack(padx=20, pady=5)
 
-        self.load_data = ttk.Button(self.home_page, text="Load Tournament Data", command=self.start_new_game)
-        self.load_data.pack(padx=20, pady=5)
+        self.load_data_button = ttk.Button(self.home_page, text="Load Tournament Data", command=self.load_data)
+        self.load_data_button.pack(padx=20, pady=5)
 
         # disable buttons not immediately useful
         self.new_game_button.state(["disabled"])
@@ -185,7 +186,7 @@ class MainGUI():
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
 
         if self.data_extracted == False:
-            # set the falg to True
+            # set the flag to True
             self.data_extracted = True
 
             # Tournament metadata for input
@@ -199,9 +200,14 @@ class MainGUI():
             # now we have the metadata, we can complete the set up
             self.complete_set_up()
 
-            # import all the data
-            extraction_tool = DataExtractor()
-            self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
+            #!! import all the data
+            if self.load_from_json == True:
+                self.tournament_metadata = self.loaded_data["metadata"]
+                self.imported_roster = self.loaded_data["players"]
+                self.raw_game_data = self.loaded_data["game_data"] 
+            else:
+                extraction_tool = DataExtractor()
+                self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
 
             # change button text once data is extracted !! move this later
             self.resultsContents = tk.StringVar()
@@ -400,6 +406,57 @@ class MainGUI():
 
         print(player_performance)
 
+    def save_data(self):
+        """Saves all the data acquired so far into a json file"""
+
+        # establish file name
+        filename = "stored_data/" + self.tournament_name + ".json"
+
+        # establish a list of players
+        player_dict = {}
+        for player in self.team.roster:
+            player_dict[player] = {
+                "Player Number" : self.team.roster[player].number
+            }
+        
+        # wrap up game info
+        games_dict = {}
+        for game in self.games:
+            games_dict[game] = {
+                "Opponent" : self.games[game].opp_name,
+                "Starting on Defence" : self.games[game].defence_start,
+                "Turns per Point" : self.games[game].list_of_numbers_of_turns,
+                "Active Players" : [],
+            }
+
+            # add point line ups
+            for point in self.games[game].point_lineups:
+                games_dict[game]["Active Players"].append(self.games[game].point_lineups[point])
+
+        # wrap everything into a single dictionary
+        dict_to_save = {
+            "metadata" : self.tournament_metadata,
+            "players" : player_dict,
+            "game_data" : games_dict,
+        }
+
+        # save the information
+        with open(filename, 'w') as f:
+            json.dump(dict_to_save, f, indent=4)
+
+    def load_data(self):
+        """Loads a saved json file for a tournament"""
+
+        #!! choose file to load
+        filename = "stored_data/Glasto 2019.json"
+
+        # load data into a python dictionary
+        with open(filename) as f:
+            self.loaded_data = json.load(f)    
+
+        #!! set the flag and call the data extraction function
+        self.load_from_json = True
+        self.extract_stock_data()    
 
 # call the main code
 if __name__ == "__main__":
