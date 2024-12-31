@@ -4,22 +4,27 @@
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
-import copy
 
 class LiveGame():
-    def __init__(self, parent, opponent, game_number):
+    def __init__(self, parent, opponent, game_number, team_start_on_defence):
         # copy out key parent parts
         self.parent = parent
 
         # collect key game meta info: !!
         self.opp_name_text = "Game " + str(game_number) + " vs " + opponent
-        self.team_starting_on_O = "Opp Possession"
         self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
+        if team_start_on_defence == "Us":
+            self.team_starting_on_O = "Opp Possession"
+        else:
+            self.team_starting_on_O = "Team Possession"
         
         # set the second half flag
         self.second_half = False
-
+                
+        # start a new count for how many players have been checked onto the field
+        self.number_of_players_on_pitch = 0
+        self.list_of_active_players = []
 
         # put a roster page on the main GUI
         self._build_live_page()
@@ -123,9 +128,11 @@ class LiveGame():
             self.roster_widgets[player]["number_col"].grid(row=row_count , column =2 , sticky=tk.W + tk.E)
 
             # add checkboxes here
-            self.roster_widgets[player]["checkbox_value"] = tk.IntVar()
-            self.roster_widgets[player]["check_col"] = tk.Checkbutton(self.live_page, variable=self.roster_widgets[player]["checkbox_value"], command=self.update_player_total)
+            self.roster_widgets[player]["playing status"] = tk.StringVar()
+            self.roster_widgets[player]["check_col"] = tk.Button(self.live_page, textvariable=self.roster_widgets[player]["playing status"], font=('Arial', 14))
+            self.roster_widgets[player]["check_col"].config(command=lambda t=player: self.update_player_total(t))
             self.roster_widgets[player]["check_col"].grid(row=row_count , column=3 , sticky=tk.W + tk.E)
+            self.roster_widgets[player]["playing status"].set("Off")
 
         # Add a label showing the total number of players
         row_count_memory += 1
@@ -181,43 +188,56 @@ class LiveGame():
             self.half_time_button.state(["!disabled"])
    
 
-    def update_player_total(self):
-        """When a checkbox is checked or unchecked, we update the count of checked boxes"""
-        players_checked = 0
-        for player in self.roster_widgets:
-            checkbox_value = self.roster_widgets[player]["checkbox_value"].get()
-            players_checked += checkbox_value
-        
-        self.player_count.set(players_checked)
+    def update_player_total(self, player_name):
+        """When a button is pushed, we update the count of players marked to be on the field"""
 
-        # update the message if we have exactly the right number of players
-        if players_checked == self.number_of_players_at_once:
+        if self.roster_widgets[player_name]["playing status"] == "On": # player is on the pitch
+            # reduce the count for the number of players
+            self.number_of_players_on_pitch -= 1
+            # remove the player name from the list of active players
+            self.list_of_active_players.remove(player_name)
+            # change the appearance of the button
+            self.reset_button(player_name)
+            
+        else:
+            # change status to on the pitch
+            self.roster_widgets[player_name]["playing status"].set("On")
+            # reduce the count for the number of players
+            self.number_of_players_on_pitch += 1
+            # remove the player name from the list of active players
+            self.list_of_active_players.append(player_name)
+            # change the colour of the button to grey
+            self.roster_widgets[player_name]["check_col"].config(bg='blue')
+        
+        # set the label to match the latest player count
+        self.player_count.set(self.number_of_players_on_pitch)
+
+        # update the accompanying label depending on if we have exactly the right number of players
+        if self.number_of_players_on_pitch == self.number_of_players_at_once:
             self.entry_message.set("Correct number of players")
             self.player_count_display.config(bg='PaleGreen')
         else:
             self.entry_message.set(self.default_count_message)
             self.player_count_display.config(bg='gray90')
-        
+            
+    def reset_button(self, player_name):
+        """Resets a button back to the default"""
 
+        # change status to off the pitch
+        self.roster_widgets[player_name]["playing status"].set("Off")
+        # change the colour of the button to grey
+        self.roster_widgets[player_name]["check_col"].config(bg='grey90')
+      
     def end_point(self):
         """At the end of the point, log all the data and clear the roster for the next point"""
-
-        # record who was playing
-        active_players = []
-
-        # clear the checkboxes
-        for player in self.roster_widgets:
-            if self.roster_widgets[player]["checkbox_value"].get() == 1:
-                active_players.append(player)
-                self.roster_widgets[player]["checkbox_value"].set(0)
         
-        # reset the checkbox count
+        # reset the checkbox count and messages
         self.player_count.set(0)
         self.entry_message.set(self.default_count_message)
         self.player_count_display.config(bg='gray90')
 
         # call the end point function in the active game
-        new_score_text = self.parent.games[self.parent.active_game].evaluate_point(self.turnover_count, active_players)
+        new_score_text = self.parent.games[self.parent.active_game].evaluate_point(self.turnover_count, self.list_of_active_players)
 
         # update the live score label
         self.score_readout.set(new_score_text)
@@ -229,13 +249,21 @@ class LiveGame():
         # switch the possession indicator
         self.switch_possession_text()
 
+        # reset the count of active players
+        self.list_of_active_players = []
+        self.number_of_players_on_pitch = 0
+
+        # reset the buttons
+        for player in self.roster_widgets:
+            self.reset_button(player)
+
     def half_time(self):
         """Indicates that it is half time and switches possession"""
 
         # change the record for the team that started on o
         self.parent.games[self.parent.active_game].half_time_poss_switch()
 
-        # deactivate button
+        # change the flag which will then cause the button to be deactivated
         self.second_half = True
 
         # change the text indication

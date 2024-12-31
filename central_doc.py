@@ -207,6 +207,7 @@ class MainGUI():
     def extract_stock_data(self):
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
 
+        # check if we have extracted the data already
         if self.data_extracted == False:
 
             # import all the data
@@ -332,22 +333,22 @@ class MainGUI():
         self.team.add_player_to_main_DF(self.opp_name)
 
         # Assign a name to the game
-        game_class_name = "Game " + str(self.number_of_games)
+        game_class_ref = "Game " + str(self.number_of_games)
 
         # create a new class with the assembled input data
-        self.games[game_class_name] = FrisbeeGame(self, game_class_name, self.opp_name, self.team_on_defence)
+        self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, self.opp_name, self.team_on_defence)
 
         # make a note of what the active game is called
-        self.active_game = game_class_name
+        self.active_game = game_class_ref
 
         # create a game team stats tab
-        self.team.build_game_stats_page(game_class_name)
+        self.team.build_game_stats_page(game_class_ref)
 
         # add the players to the new stats page
-        self.team.add_players_to_stats_page(game_class_name)
+        self.team.add_players_to_stats_page(game_class_ref)
 
         # create a live game tab
-        self.live_game = LiveGame(self, self.opp_name, self.number_of_games)
+        self.live_game = LiveGame(self, self.opp_name, self.number_of_games, self.team_on_defence)
 
     def run_machine_learning_analysis(self):
         """When called this method will run all the necessary functions to produce the player coefficients"""

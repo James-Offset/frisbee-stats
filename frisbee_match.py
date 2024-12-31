@@ -1,54 +1,4 @@
-"""This file holds the class for a single frisbee game
-
-The main purpose of this class will be to capture the line-ups for each point and the number of turn-overs per point.
-Ideally we would have some kind of readout displaying the live score
-
-Meta data would be the game number, opposition name, maybe date and time, who starts on offence
-
-Functions:
-Capture the line-up for a point (maybe by calling a function within the point class)
-Work out what the live score is + print whether last point was a hold or a break
-Initiate half time
-calculate stats for just this game > maybe call another class
-
-
-
-Calculate overall game stats: num_points, num_turns, num_o_starts, num_possessions, avg_poss_per_point
-Turns Won
-Turns Lost
-No. O Posessions
-No. D Posessions
-
-Score rate
-Pos Loss Rate
-Concede rate
-Pos Win Rate
-
-Predicted Goals for
-Predicted Goals Against
-Net
-
-O start goal
-O start concede
-D start goal
-D start concede
-
-O goal rate
-O concede rate
-D goal rate
-D concede rate
-
-Pos / OG
-Pos / OC
-Pos / DG
-Pos / DC
-
-No. O / OG
-No. D / OG
-No. D / DG
-No. O / DG
-
-"""
+"""This file holds the class for a single frisbee game. It contains methods to record what happens for each point and to calculate performance"""
 
 """Third Party Code"""
 import tkinter as tk
@@ -57,12 +7,12 @@ from tkinter import messagebox
 
 
 class FrisbeeGame():
-    def __init__(self, parent, name, opp_name, defence_start):
+    def __init__(self, parent, game_number, opp_name, defence_start):
         """This stores the core infomation"""
 
         # copy out useful variables
         self.parent = parent
-        self.name = name
+        self.name = "G" + str(game_number) + " vs " + opp_name[:7]
         self.opp_name = opp_name
         self.defence_start = defence_start
 
@@ -71,8 +21,10 @@ class FrisbeeGame():
         self.game_page.pack()
         self.parent.notebook.add(self.game_page, text=self.name)
 
+        # populate the GUI
         self._configure_table()
 
+        # set up additional dicitionaries and variables needed to track the match
         self._initiate_game_state()
 
     def _configure_table(self):
@@ -99,6 +51,7 @@ class FrisbeeGame():
 
         column_number=0
         for column in self.gui_grid_dict["heading text"]:
+
             # create a column
             self.game_page.columnconfigure(column_number, weight=self.gui_grid_dict["column weighting"][column_number])
         
@@ -112,7 +65,7 @@ class FrisbeeGame():
 
             column_number += 1
 
-        # remove the button heading text
+        # remove the button heading text which we had to add in to make the previous bit work
         self.gui_grid_dict["label elements"]["button"].config(text="")
 
         # horizontal Separator
@@ -133,12 +86,13 @@ class FrisbeeGame():
             none = self.evaluate_point(list_of_turns[i], list_of_active_players[i])
 
     def _initiate_game_state(self):
-        """Looks at the number of turns and calcualtes the points won/lost and turnovers won/lost per point"""
+        """Looks at the number of turns and calculates the points won/lost and turnovers won/lost per point"""
         
         # record who playes each point
         self.point_lineups = {}
         self.list_of_numbers_of_turns = []
 
+        # create a dictionary to record what happened in each point
         self.team_performance = {
             "Hold or Break" : [],
             "Who Scored" : [],
@@ -149,9 +103,10 @@ class FrisbeeGame():
             "Players on Pitch" : [],
         }
 
-
+        # set up the flag for who starts the first half on defence
         self.establish_start_indicator(False)
 
+        # set up some useful counters
         self.point_number = 0
         self.live_team_score = 0
         self.live_opp_score = 0
@@ -159,7 +114,7 @@ class FrisbeeGame():
     def establish_start_indicator(self, half_time):
         """At the beginning of the game, or after half time, set the indicator for who starts on offence"""
 
-        # record a modifier for who starts on defence
+        # record a modifier for who starts the point on defence
         if self.defence_start == 'Us':
             self.o_start_indicator = -1
         else:
@@ -168,6 +123,12 @@ class FrisbeeGame():
         if half_time == True:
             # switch the starting team
             self.o_start_indicator = self.o_start_indicator * -1
+
+    def half_time_poss_switch(self):
+        """Changes the indicator of who started on offence following half time. Method is called from the live game page via button"""
+
+        # log switch of possession
+        self.establish_start_indicator(True)
 
     def evaluate_point(self, number_of_turns, list_of_active_players):
         """Takes the information from a completed point and updates necessary variables"""
@@ -179,7 +140,7 @@ class FrisbeeGame():
         self.number_of_turns = number_of_turns
         self.point_lineups[self.point_number] = list_of_active_players
 
-        # store the number of turns if we need to save the info later
+        # store the number of turns if we need to save the info later !! check if this is used at all
         self.list_of_numbers_of_turns.append(self.number_of_turns)
 
         # get the basic stats
@@ -191,9 +152,10 @@ class FrisbeeGame():
         # reset the modifier for who starts the next point on defence
         self.o_start_indicator = 1 - (self.team_point * 2)
 
+        # update the stats for each individual player
         self._update_player_stats()
         
-        # update the main DataFrame
+        # update the main DataFrame which is used for machine learning
         self.update_main_data_frame()
 
         # feed the score text value back to the live game tab
@@ -216,7 +178,7 @@ class FrisbeeGame():
         self.turnovers_conceded = int(self.number_of_turns - self.turnovers_won)
         self.team_performance["Disc Lost"].append(self.turnovers_conceded)
         
-        # player stats list
+        # create a dictionary of stats from that point that will be copied for each player who participated
         self.point_stats_list = {
             "number of points played" : 1,
             "number of possessions played" : self.number_of_turns + 1,
@@ -227,14 +189,10 @@ class FrisbeeGame():
         }
         # >>> copied in each player class, at least for the teammate section
 
-        # save these in case we need them later !! check if used
-        self.extra_stats = {
-        }
-
     def _update_game_display_tab(self):
         """adds a new row to the table on the game tab"""
 
-        # increment row number
+        # increment the display row number
         self.row_number += 1
         self.row_number_ref = str(self.row_number)
 
@@ -258,7 +216,7 @@ class FrisbeeGame():
         score_text = str(self.live_team_score) + " - " + str(self.live_opp_score)
 
         # create a text representation of the live score for the live tab
-        self.live_score_text = "Score: " + str(self.live_team_score) + " - " + str(self.live_opp_score)
+        self.live_score_text = "Score: " + score_text
 
         # update text entries
         text_entries = {
@@ -276,14 +234,14 @@ class FrisbeeGame():
         column_number = 0        
         for element in self.gui_grid_dict["heading text"]:
             if element == "button":
-                # add a button
+                # add a button that can be clicked to see who was on that point
                 self.point_gui_rows[self.row_number_ref][element] = tk.Button(self.game_page, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
                 self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky=tk.W + tk.E, pady=2)
             elif "separator" in element:
                 # redraw the separator from the top
                 self.gui_grid_dict["label elements"][element].grid(row=0, rowspan=self.row_number+1, column=column_number, sticky="ns", padx=3)
             else:
-                # add a new label
+                # add a new label displaying the relevant info
                 self.point_gui_rows[self.row_number_ref][element] = tk.Label(self.game_page, text=text_entries[element], font=('Arial', 16))
                 self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky='ew')
 
@@ -315,36 +273,36 @@ class FrisbeeGame():
     def update_main_data_frame(self):
         """Looks at what happened during the point and updates the main data frame"""
         
-        # create an empty list for the new row of data
+        # create an empty list for the new row of data, this will be copied out multiple times
         new_row = []
 
-        # success measure, start with failures (turnovers)
+        # the first entry is the success measure. We will copy the row for each possession concede first (success = 0)
         new_row.append(0)
 
         # player records
+        # log a 1 or a zero depending on whether the player is on the field
         for factor in self.parent.data_frame_headings:
-            # log a 1 or a zero depending on whether the player is on the field
             if factor in self.point_lineups[self.point_number] + [self.opp_name]:
                 new_row.append(1)
             else:
                 new_row.append(0)
 
+        # each time we concede a turnover, copy out the row
         for i in range(self.turnovers_conceded):
             self.parent.o_df.loc[len(self.parent.o_df)] = new_row
 
+        # if we lose the point, copy out the row
         if self.team_point == 0:
             self.parent.d_df.loc[len(self.parent.d_df)] = new_row
 
-        # switch to team successes
+        # switch to logging team successes
         new_row[0] = 1
 
+        # for each possesion won, copy out the row
         for i in range(self.turnovers_won):
             self.parent.d_df.loc[len(self.parent.d_df)] = new_row
 
+        # if we scored the point, copy out the row
         if self.team_point == 1:
             self.parent.o_df.loc[len(self.parent.o_df)] = new_row
 
-    def half_time_poss_switch(self):
-        """Changes the indicator of who started on offence following half time"""
-
-        self.establish_start_indicator(True)

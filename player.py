@@ -404,7 +404,10 @@ class Player():
                 op_with = self.teammate_records[self.live_game_ref][teammate]["no. offence possessions"]
                 op_without = self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] - op_with
                 self.teammate_records[self.live_game_ref][teammate]["offence poss without"] = op_without
-                o_ratio = op_with / (op_with + op_without)
+                try:
+                    o_ratio = op_with / (op_with + op_without)
+                except ZeroDivisionError:
+                    o_ratio = 0
 
                 if o_ratio < self.parent.player_v_player_ratio or 1-o_ratio < self.parent.player_v_player_ratio:
                     pass

@@ -95,7 +95,7 @@ class NewGameWindow():
         # clear the status label
         self.status_label.config(text="")
 
-    def submit_info(self):
+    def submit_info(self, none=1):
         """Gets the written information and checks if it is good"""
 
         # get the entry from the box
