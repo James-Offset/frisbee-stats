@@ -1,7 +1,5 @@
 """This is the base document that will call all of the other functions and classes"""
 
-
-
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
@@ -70,18 +68,17 @@ class MainGUI():
         self.home_page.pack()
         self.notebook.add(self.home_page, text="Home Page")
 
-        # add a label at the top
-        self.label = tk.Label(self.home_page, text="Frisbee Stats Homepage", font=('Arial', 18))
-        self.label.pack(padx=20, pady= 20)
+        # add a heading at the top
+        self.heading = tk.Label(self.home_page, text="Frisbee Stats Homepage", font=('Arial', 18))
+        self.heading.pack(padx=20, pady= 20)
 
-        # add a textbox for manual metadata info !! change this to an entry widget later
-        self.metadata_label = tk.Label(self.home_page, text="Enter your team name to start")
-        self.metadata_label.pack(pady=2)
-        self.metadata_box = tk.Text(self.home_page, height=1, width=15, font=('Arial', 16))
-        self.metadata_box.pack(pady=2)
-        self.metadata_box.bind("<Return>", self.submit_metagame_info)
-        self.metadata_button = ttk.Button(self.home_page, text="Submit Info", command=self.manual_metadata_receive)
-        self.metadata_button.pack(padx=10,pady=10)
+        # add a label prompting the user for where to start
+        self.start_label = tk.Label(self.home_page, text="Click below to start")
+        self.start_label.pack(pady=2)
+
+        # add a button to start the program
+        self.program_start_button = ttk.Button(self.home_page, text="Start Program", command=self.user_starts_program)
+        self.program_start_button.pack(padx=10,pady=10)
 
         # add a button to import the data we already have
         self.import_data_button = ttk.Button(self.home_page, text="Import Data", command=self.extract_stock_data)
@@ -135,53 +132,45 @@ class MainGUI():
         self.new_game_button.state(["disabled"])
         self.new_player_button.state(["disabled"])
         
-    
+    def user_starts_program(self):
+        """This method is called when the user first pushes the start program button"""
+        
+        # create a new class to handle the data entry window
+        window = NewGameWindow(self.root, "new program")
+
+        # collect the returned info
+        data_provision_success, provided_info = window.return_info()
+
+        if data_provision_success == True:
+            # if we successfully get the data, copy it out, if not then nothing happens
+            self.program_type = provided_info[0]
+
+            # reconfigure for the next data entry
+            if self.program_type == "Tournament":
+                self.program_start_button.config(command=self.manual_metadata_receive)
+                self.program_start_button.config(text="Enter Info")
+                self.start_label.config(text="Click the button below to enter tournament infomation")
+
     def manual_metadata_receive(self):
         """This is the method that will trigger when the metadata button is pushed"""
 
-        # set a default error message
-        self.metadata_message = "Unknown Error"
+        # create a new class to handle the data entry window
+        window = NewGameWindow(self.root, "new tournament")
 
-        # get the text that the user has entered
-        box_entry = self.metadata_box.get('1.0', tk.END)
+        # collect the returned info
+        data_provision_success, provided_info = window.return_info()
 
-        try:
-            if self.metadata_flag == 0: # no metadata yet
-                team_name = box_entry[:-1]
-                if len(team_name) < 20 and len(team_name) > 1: # check the team name is a suitable length
-                    self.team_name = team_name
-                    self.metadata_flag = 1
-                    self.metadata_message = "Please enter the tournament name" # ask for next info
-                    self.metadata_box.delete('1.0', tk.END) # empty the box
-                else:
-                    self.metadata_message = "Team name length must be no more than 20 characters"
-            elif self.metadata_flag == 1: # now want tournament name
-                tournament_name = box_entry[:-1]
-                if len(tournament_name) < 20 and len(tournament_name) > 1:
-                    self.tournament_name = tournament_name
-                    self.metadata_flag = 2
-                    self.metadata_message = "Please enter the number of teammates playing per point (5 or 7)"
-                    self.metadata_box.delete('1.0', tk.END)
-                else:
-                    self.metadata_message = "Tournament name length must be no more than 20 characters"
-            elif self.metadata_flag == 2:
-                self.metadata_message = "Please enter 5 or 7 only"
-                try:
-                    number_of_players = int(box_entry)
-                except ValueError:
-                    pass
-                else:
-                    if number_of_players == 5 or number_of_players == 7:
-                        self.number_of_players_at_once = number_of_players
-                        self.metadata_flag = 3
-                        self.metadata_message = "Metagame info entry complete"
-                        self.metadata_box.delete('1.0', tk.END)
-                        self.complete_set_up()
-        except Exception:
-            self.metadata_message = "Unknown error, please try again"
+        if data_provision_success == True:
+            # if we successfully get the data, copy it out
+            self.tournament_name = provided_info[0]
+            self.team_name = provided_info[1]
+            self.number_of_players_at_once = int(provided_info[2]) 
 
-        # each time we call this method, we need to update the message for the user
-        self.metadata_label.config(text=self.metadata_message)
+            # continue with the set up
+            self.complete_set_up()
+
+        # if not then nothing happens
+
     
     def complete_set_up(self):
         """Once the metadata for the tournament is in, run this code to allow for the full app to run"""
@@ -190,7 +179,7 @@ class MainGUI():
         self.team = Team(self)
 
         # change the status of buttons
-        self.metadata_button.state(["disabled"])
+        self.program_start_button.state(["disabled"])
         self.new_player_button.state(["!disabled"])
         
         # set up storage for tournament data for machine learning

@@ -10,20 +10,71 @@ class NewGameWindow():
         self.root = gui_root
         self.mode = entry_type
 
-        # create the window and add widgets
-        self._create_window()
-
         # set a marker for what data we want
-        self.data_marker = 0
+        self.request_number = -1
         self.output_data = []
         self.all_data_aquired = False
         self._establish_entries_required()
 
-        # update window to configuration
-        self._configure_window()
+        # create the window and add widgets
+        self._create_window()
 
         # stop the main GUI from running
         self._set_run_conditions()
+
+    def _establish_entries_required(self):    
+        """Based on what kind of data we want the user to input, we use different setting for this window"""
+
+        if self.mode == "new game":
+            self.config_dict = {
+                "title" : "New Game Info",
+                "heading" : "New Game:",
+                "requests" : [
+                    {
+                    "prompt" : "Enter the name of the opposing team:",
+                    "radio options" : None 
+                    },
+                    {
+                    "prompt" : "Please enter which team starts on defence:",
+                    "radio options" : ["My Team" , "Opposition Team"]
+                    },
+                ]
+            }
+
+        elif self.mode == "new program":
+            self.config_dict = {
+                "title" : "Program Set Up",
+                "heading" : "New Analysis Program",
+                "requests" : [
+                    {
+                    "prompt" : "Choose the program you want to run:",
+                    "radio options" : ["Tournament", "Scrimmage"]
+                    },
+                ]
+            }
+
+        elif self.mode == "new tournament":
+            self.config_dict = {
+                "title" : "New Tournament",
+                "heading" : "Tournment Info",
+                "requests" : [
+                    {
+                    "prompt" : "Please enter the tournament name",
+                    "radio options" : None
+                    },
+                    {
+                    "prompt" : "Please enter your team name",
+                    "radio options" : None
+                    },
+                    {
+                    "prompt" : "How many players per side?",
+                    "radio options" : ["5", "7"]
+                    },
+                ]
+            }
+            
+        # count the number of entries we are expecting
+        self.request_threshold = len(self.config_dict["requests"]) - 1
 
     def _create_window(self):
         """Creates the new window and adds the necessary widgets"""
@@ -31,26 +82,50 @@ class NewGameWindow():
         self.game_metadata_window = tk.Toplevel(self.root)
         self.game_metadata_window.geometry("400x250")
         self.game_metadata_window.attributes("-topmost", 1)
+        self.game_metadata_window.title(self.config_dict["title"])
         
-        # add label asking for information
-        self.title_label = tk.Label(self.game_metadata_window, text="", font=('Arial', 16))
-        self.title_label.pack(pady=10)
+        # add a heading
+        self.heading_label = tk.Label(self.game_metadata_window, text=self.config_dict["heading"], font=('Arial', 16))
+        self.heading_label.pack(pady=10)
+
+        # put in the first request
+        self.build_request_widgets()
+
+    def build_request_widgets(self):
+        """When we ask the user for new information, we create a new frame containing the right widgets"""
+
+        # increment the request number
+        self.request_number += 1
+
+        # create a sub frame to hold the widgets for one request
+        self.request_frame = tk.Frame(self.game_metadata_window)
+        self.request_frame.pack(pady=10)
 
         # add label asking for information
-        self.window_label = tk.Label(self.game_metadata_window, text="", font=('Arial', 14))
-        self.window_label.pack(pady=10)
+        request_text = self.config_dict["requests"][self.request_number]["prompt"]
+        self.request_label = tk.Label(self.request_frame, text=request_text, font=('Arial', 14))
+        self.request_label.pack(pady=10)
 
-        # add a box for the user to enter the information
-        self.entry_box = tk.Text(self.game_metadata_window, height=1, width=20, font=('Arial', 16))
-        self.entry_box.pack(pady=5)
-        self.entry_box.bind("<Return>", self.submit_info)
+        # add the user entry widget
+        if self.config_dict["requests"][self.request_number]["radio options"] == None:
+            # must be a text entry, add a box for the user to enter text information
+            self.entry_box = tk.Text(self.request_frame, height=1, width=20, font=('Arial', 16))
+            self.entry_box.pack(pady=5)
+            self.entry_box.bind("<Return>", self.submit_info)
+        else:
+            # add a set of radio buttons
+            self.choice = tk.StringVar()
+            self.radio_dict = {}
+            for option in self.config_dict["requests"][self.request_number]["radio options"]:
+                self.radio_dict[option] = ttk.Radiobutton(self.request_frame, text=option, variable=self.choice, value=option)
+                self.radio_dict[option].pack(pady=3)
 
         # add a submit button
-        self.submit_button = ttk.Button(self.game_metadata_window, text="Submit", command=self.submit_info)
+        self.submit_button = ttk.Button(self.request_frame, text="Submit", command=self.submit_info)
         self.submit_button.pack(padx=10, pady=5)
 
         # add label giving the status
-        self.status_label = tk.Label(self.game_metadata_window, text="", font=('Arial', 14))
+        self.status_label = tk.Label(self.request_frame, text="", font=('Arial', 14))
         self.status_label.pack(pady=5)
 
     def _set_run_conditions(self):
@@ -64,64 +139,65 @@ class NewGameWindow():
         self.game_metadata_window.grab_set()        # ensure all input goes to our window
         self.game_metadata_window.wait_window()     # block until window is destroyed
 
-    def _establish_entries_required(self):    
-        """Based on what kind of data we want the user to input, we use different setting for this window"""
-
-        if self.mode == "new game":
-            self.number_of_entries_req = 2
-            self.config_dict = {
-                "Title" : "New Game Info",
-                "Heading" : "New Game:",
-                "Request" : ["Enter the name of the opposing team:", "Please enter which team starts on defence"],
-            }
-
-    def _configure_window(self):
-        """Updates the window according to the specific configuration settings"""
-
-        self.game_metadata_window.title(self.config_dict["Title"])
-        self.title_label.config(text=self.config_dict["Heading"])
-
-        self.update_labels()
-
-    def update_labels(self):
-        """Updates labels to ask for the next piece of information"""
-
-        # update the request label
-        self.window_label.config(text=self.config_dict["Request"][self.data_marker])
-
-        # empty the entry box
-        self.entry_box.delete('1.0', tk.END)
-
-        # clear the status label
-        self.status_label.config(text="")
-
     def submit_info(self, none=1):
         """Gets the written information and checks if it is good"""
+
+        if self.config_dict["requests"][self.request_number]["radio options"] == None:
+            # must be a text entry
+            self.check_text_entry()
+        else:
+            # must be a radio entry
+            self.check_radio_entry()
+
+    def check_text_entry(self):
+        """Checks whether the user has submitted a valid text entry"""
 
         # get the entry from the box
         entry = self.entry_box.get('1.0', tk.END)
         entry = entry[:-1] # take off the new line that gets added
 
-        if len(entry) > 15 or len(entry) < 2:
-            status_message = "Entry exceeds 15 characters"
+        if len(entry) > 10 or len(entry) < 1:
+            status_message = "Entry does not meet length requirements (max 10 characters)"
             self.status_label.config(text=status_message)
         else:
             # add the information to the output list
             self.output_data.append(entry)
 
-            # increment the info marker
-            self.data_marker += 1
+            # see what needs to happen next
+            self.follow_successful_entry()
 
-            if self.data_marker >= self.number_of_entries_req: # we have all the info we want
+    def check_radio_entry(self):
+        """Check to see if the user has picked an option"""
 
-                self.all_data_aquired = True
+        # get the chosen variable
+        x = self.choice.get()
 
-                # close the window
-                self.close_window()
+        if x in self.config_dict["requests"][self.request_number]["radio options"]:
+            # add the information to the output list
+            self.output_data.append(x)
 
-            else:
-                # ask for the next piece of info
-                self.update_labels()
+            # see what needs to happen next
+            self.follow_successful_entry()
+        else:
+            # the user must have not chosen an option yet.
+            status_message = "Please select an option, then click submit"
+            self.status_label.config(text=status_message)
+
+    def follow_successful_entry(self):
+
+        if self.request_number >= self.request_threshold: # we have all the info we want
+
+            self.all_data_aquired = True
+
+            # close the window
+            self.close_window()
+
+        else:
+            # get rid of the old request widget frame
+            self.request_frame.destroy()
+
+            # ask for the next piece of info
+            self.build_request_widgets()
 
     def close_window(self):
         self.game_metadata_window.grab_release()

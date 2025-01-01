@@ -14,7 +14,7 @@ class LiveGame():
         self.opp_name_text = "Game " + str(game_number) + " vs " + opponent
         self.number_of_players_at_once = self.parent.number_of_players_at_once
         self.default_count_message = "Please select " + str(self.number_of_players_at_once) + " players"
-        if team_start_on_defence == "Us":
+        if team_start_on_defence == "My Team" or team_start_on_defence == "Us":
             self.team_starting_on_O = "Opp Possession"
         else:
             self.team_starting_on_O = "Team Possession"
