@@ -8,6 +8,7 @@ from tkinter import ttk
 """My Code"""
 from player import Player
 from awards_tab import AwardsTab
+from roster_tab import RosterTab
 
 class Team():
     """A class to manage all the functions relating to the team roster"""
@@ -17,6 +18,10 @@ class Team():
 
         # copy out key parent parts
         self.parent = parent
+
+        # Get tournament name
+        self.tournament_name = parent.tournament_name
+        self.team_name = parent.team_name
 
         # set the threshold of what counts a significant ratio of data
         self.min_num_possessions = 4
@@ -38,18 +43,19 @@ class Team():
         self.pf_heading_elements = {}
         self.pf_separator_elements = {}
 
-        # Get tournament name
-        self.tournament_name = parent.tournament_name
-        self.team_name = parent.team_name
-
         # create a player class that actually represents the whole team
         self.team_record = Player(self, self.team_name, 0, -1)
+
+        # set up a simple tab where the user can enter the player info. this is handled by a new class
+        self.roster_tab = RosterTab(self)
 
         # put a roster page on the main GUI for the full tournaments stats
         self.build_game_stats_page(self.tournament_name)
 
         # create the awards tab
         self.awards_class = AwardsTab(self)
+
+
 
     def build_game_stats_page(self, tab_name):
         """Prepares the team records and builds the two sections of the gui tabs"""
@@ -169,51 +175,6 @@ class Team():
             self.pf_heading_elements[tab_name][heading].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
 
             column_number += 1
-
-    def check_manual_player_entry(self, name_entry, number_entry):
-        """Checks whether the user input for a new player is valid"""
-
-        # set an error as the default
-        error_message = None
-
-        # check the number first, so name error overrides it they are both invalid. Start with check for integer
-        try:
-            player_number = int(number_entry)
-        except ValueError:
-            error_message = "Number entered must be an integer with no other characters"
-        else:
-            if player_number < 0:
-                error_message = "Player number must be at least zero"
-            elif player_number > 999:
-                error_message = "Player number must be less than 1000"
-            else:
-                # check if this number is already taken
-                for player in self.roster:
-                    if player_number == self.roster[player].number:
-                        error_message = "Player number already taken"
-                        break
-            
-        # then check if the name is a valid string
-        try:
-            name_entry = name_entry[:-1] # take off the new line that gets added
-            if len(name_entry) > 10:
-                error_message = "Name entered cannot be longer than 10 characters"
-            elif name_entry == self.team_name:
-                error_message = "Name cannot match the team name"
-            elif name_entry in self.roster:
-                error_message = "Name already taken, please choose another"
-        except Exception:
-            error_message = "Unknown error, please enter name again"
-
-        if error_message == None:
-            # add the player to the roster
-            self.new_player_entry(name_entry, player_number)
-            error_message = "Player successfully added to roster"
-            # clear the entry boxes
-            self.parent.player_name_box.delete('1.0', tk.END)
-            self.parent.player_number_box.delete('1.0', tk.END)
-        
-        return error_message
 
     def new_player_entry(self, player_name, player_number):
         """Creates a class to for a new player"""

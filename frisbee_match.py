@@ -89,9 +89,10 @@ class FrisbeeGame():
     def _initiate_game_state(self):
         """Looks at the number of turns and calculates the points won/lost and turnovers won/lost per point"""
         
-        # record who playes each point
+        # set up some dictionaries to store game events
         self.point_lineups = {}
         self.list_of_numbers_of_turns = []
+        self.wind_direction_list = []
 
         # create a dictionary to record what happened in each point
         self.team_performance = {
@@ -162,6 +163,7 @@ class FrisbeeGame():
 
         # store the number of turns if we need to save the info later !! check if this is used at all
         self.list_of_numbers_of_turns.append(self.number_of_turns)
+        self.wind_direction_list.append(self.wind_direction)
 
         # get the basic stats
         self._work_out_team_performance()
@@ -275,10 +277,12 @@ class FrisbeeGame():
         """Brings up a message box listing the players who played that point"""
 
         messagebox_title = "Point " + str(reference_point_number) + " line-up"
-        player_string = ""
+        message_string = ""
         for player in self.point_lineups[reference_point_number]:
-            player_string = player_string + player + " // "
-        messagebox.showinfo(title=messagebox_title, message=player_string)
+            message_string = message_string + player + " // "
+        wind_direction_indicator = (self.wind_direction + 3) / 2
+        message_string = message_string + "Wind direction " + str(wind_direction_indicator)
+        messagebox.showinfo(title=messagebox_title, message=message_string)
         
 
     def _update_player_stats(self):

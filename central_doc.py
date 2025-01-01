@@ -3,6 +3,7 @@
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -80,34 +81,21 @@ class MainGUI():
         self.program_start_button = ttk.Button(self.home_page, text="Start Program", command=self.user_starts_program)
         self.program_start_button.pack(padx=10,pady=10)
 
+        # add a status label
+        self.import_status_label = tk.Label(self.home_page, text="Alternatively, click below to import a dataset:")
+        self.import_status_label.pack(pady=5)
+
         # add a button to import the data we already have
         self.import_data_button = ttk.Button(self.home_page, text="Import Data", command=self.extract_stock_data)
         self.import_data_button.pack(padx=10,pady=10)
 
-        # add a status label
-        self.import_status_label = tk.Label(self.home_page, text="Please click for roster import")
-        self.import_status_label.pack(pady=5)
+        # add a load tournament info button
+        self.load_data_button = ttk.Button(self.home_page, text="Load Tournament Data", command=self.load_data)
+        self.load_data_button.pack(padx=20, pady=5)
 
-        # add label asking for new player name
-        self.player_name_label = tk.Label(self.home_page, text="Enter the name for a new player below")
-        self.player_name_label.pack(pady=2)
-
-        # add new player text entry box !! change this to an entry widget later
-        self.player_name_box = tk.Text(self.home_page, height=1, width=10, font=('Arial', 16))
-        self.player_name_box.pack(pady=2)
-        self.player_name_box.bind("<Return>", self.disable_newline)
-
-        # add label asking for new player name
-        self.player_number_label = tk.Label(self.home_page, text="Enter the number for a new player below")
-        self.player_number_label.pack(pady=2)
-
-        self.player_number_box = tk.Text(self.home_page, height=1, width=5, font=('Arial', 16))
-        self.player_number_box.pack(pady=2)
-        self.player_number_box.bind("<Return>", self.submit_player_number)
-
-        # add new player entry button
-        self.new_player_button = ttk.Button(self.home_page, text="Enter Player", command=self.manual_player_input)
-        self.new_player_button.pack(padx=20, pady=5)
+        # add a save tournament info button
+        self.save_data_button = ttk.Button(self.home_page, text="Save Tournament Data", command=self.save_data)
+        self.save_data_button.pack(padx=20, pady=5)
 
         # add a status label
         self.player_entry_status_label = tk.Label(self.home_page, text="Click the button above to enter new player info")
@@ -121,16 +109,8 @@ class MainGUI():
         self.ml_button = ttk.Button(self.home_page, text="Do Machine Learning!", command=self.run_machine_learning_analysis)
         self.ml_button.pack(padx=20, pady=20)
 
-        # add a save tournament info and load tournament info buttons
-        self.save_data_button = ttk.Button(self.home_page, text="Save Tournament Data", command=self.save_data)
-        self.save_data_button.pack(padx=20, pady=5)
-
-        self.load_data_button = ttk.Button(self.home_page, text="Load Tournament Data", command=self.load_data)
-        self.load_data_button.pack(padx=20, pady=5)
-
         # disable buttons not immediately useful
         self.new_game_button.state(["disabled"])
-        self.new_player_button.state(["disabled"])
         
     def user_starts_program(self):
         """This method is called when the user first pushes the start program button"""
@@ -181,7 +161,6 @@ class MainGUI():
 
         # change the status of buttons
         self.program_start_button.state(["disabled"])
-        self.new_player_button.state(["!disabled"])
         
         # set up storage for tournament data for machine learning
         self.mldf = {}
@@ -229,7 +208,7 @@ class MainGUI():
 
             # create player classes
             for player in self.imported_roster:
-                self.team.new_player_entry(player, self.imported_roster[player]['Player Number'])
+                self.team.roster_tab.add_player_to_records(player, self.imported_roster[player]['Player Number'])
 
         elif self.game_import == False: #!! change this all to one step (from two) later
             # create game classes
@@ -264,36 +243,6 @@ class MainGUI():
             
             # once all data has been processed, we end the live game
             self.live_game.end_game()
-      
-    def manual_player_input(self):
-        """Takes the user entry in the text boxes and checks it. If ok, adds a new player"""
-
-        # copy out the user entries
-        name_entry = self.player_name_box.get('1.0', tk.END)
-        number_entry = self.player_number_box.get('1.0', tk.END)
-
-        # pass to function in team class
-        return_message = self.team.check_manual_player_entry(name_entry, number_entry)
-
-        # show the message communicating whether the data entry was successful or not
-        self.player_entry_status_label.config(text=return_message)
-
-    def disable_newline(self, event):
-        """If someone tries to hit enter while typing in an entry this will prevent the box from adding a new line"""
-        return "break"
-    
-    def submit_player_number(self, event):
-        """If the user hits enter after their player number, it is submitted"""
-        self.manual_player_input()
-        return "break"
-    
-    def submit_metagame_info(self, event):
-        """If the user hits enter after their metagame info, it is submitted"""
-        if self.metadata_flag == 3:
-            pass # do nothing
-        else:
-            self.manual_metadata_receive()
-        return "break"
 
     def manual_game_start(self):
         """Creates the class for a new game when button pressed by user"""
@@ -440,62 +389,84 @@ class MainGUI():
         """Saves all the data acquired so far into a json file"""
 
         # establish file name
-        filename = "stored_data/" + self.tournament_name + ".json"
+        half_filename = filedialog.asksaveasfilename()
+        #filename = "stored_data/" + self.tournament_name + ".json" !!
+        print(half_filename)
 
-        # collect tournament metadata
-        self.tournament_metadata = {
-            "Team Name" : self.team_name,
-            "Tournament Name" : self.tournament_name,
-            "Players per Point" : self.number_of_players_at_once,
-            "Number of Games" : self.number_of_games,
-            "Environment" : self.environment,
-        }
+        # add the .json file type to the filename
+        filename = half_filename + ".json"
 
-        # establish a list of players
-        player_dict = {}
-        for player in self.team.roster:
-            player_dict[player] = {
-                "Player Number" : self.team.roster[player].number
+        # check the user actually selected a file
+        try: 
+            # collect tournament metadata
+            self.tournament_metadata = {
+                "Team Name" : self.team_name,
+                "Tournament Name" : self.tournament_name,
+                "Players per Point" : self.number_of_players_at_once,
+                "Number of Games" : self.number_of_games,
+                "Environment" : self.environment,
             }
+
+            # establish a list of players
+            player_dict = {}
+            for player in self.team.roster:
+                player_dict[player] = {
+                    "Player Number" : self.team.roster[player].number
+                }
+            
+            # wrap up game info
+            games_dict = {}
+            for game in self.games:
+                games_dict[game] = {
+                    "Opponent" : self.games[game].opp_name,
+                    "Starting on Defence" : self.games[game].defence_start,
+                    "Turns per Point" : self.games[game].list_of_numbers_of_turns,
+                    "Active Players" : [],
+                }
+
+                # add point line ups
+                for point in self.games[game].point_lineups:
+                    games_dict[game]["Active Players"].append(self.games[game].point_lineups[point])
+
+            # wrap everything into a single dictionary
+            dict_to_save = {
+                "file tag" : "frisbee is awesome",
+                "metadata" : self.tournament_metadata,
+                "players" : player_dict,
+                "game_data" : games_dict,
+            }
+
+            # save the information
+            with open(filename, 'w') as f:
+                json.dump(dict_to_save, f, indent=4)
         
-        # wrap up game info
-        games_dict = {}
-        for game in self.games:
-            games_dict[game] = {
-                "Opponent" : self.games[game].opp_name,
-                "Starting on Defence" : self.games[game].defence_start,
-                "Turns per Point" : self.games[game].list_of_numbers_of_turns,
-                "Active Players" : [],
-            }
-
-            # add point line ups
-            for point in self.games[game].point_lineups:
-                games_dict[game]["Active Players"].append(self.games[game].point_lineups[point])
-
-        # wrap everything into a single dictionary
-        dict_to_save = {
-            "metadata" : self.tournament_metadata,
-            "players" : player_dict,
-            "game_data" : games_dict,
-        }
-
-        # save the information
-        with open(filename, 'w') as f:
-            json.dump(dict_to_save, f, indent=4)
+        except Exception:
+            pass
 
     def load_data(self):
         """Loads a saved json file for a tournament"""
 
-        #!! choose file to load
-        filename = "stored_data/Glasto 2019.json"
+        #choose file to load
+        # filename = "stored_data/Glasto 2019.json"
+        filename = filedialog.askopenfilename()
 
-        # load data into a python dictionary
-        with open(filename) as f:
-            self.loaded_data = json.load(f)    
+        # check the user actually selected a file
+        try:
+            print(filename)
+            if filename[-4:] == "xslx":
+                self.file_type = "Excel"
+            elif filename[-4] == "json":
+                self.file_type = "json"
 
-        #!! set the flag and call the data extraction function
-        self.load_from_json = True
-        self.extract_stock_data()    
+                # load data into a python dictionary
+                with open(filename) as f:
+                    self.loaded_data = json.load(f)    
+
+                #!! set the flag and call the data extraction function
+                self.load_from_json = True
+                self.extract_stock_data()  
+        except Exception:
+            pass  
 
 # call the main code
 if __name__ == "__main__":

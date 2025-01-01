@@ -4,11 +4,12 @@ import tkinter as tk
 from tkinter import ttk
 
 class NewGameWindow():
-    def __init__(self, gui_root, entry_type):
+    def __init__(self, gui_root, entry_type, invalid_entries=[]):
 
         # copy out the root of the window and the entry required
         self.root = gui_root
         self.mode = entry_type
+        self.invalid_entries = invalid_entries
 
         # set a marker for what data we want
         self.request_number = -1
@@ -76,6 +77,22 @@ class NewGameWindow():
                     },
                 ]
             }
+
+        elif self.mode == "new player":
+            self.config_dict = {
+                "title" : "New Player",
+                "heading" : "Player Info",
+                "requests" : [
+                    {
+                    "prompt" : "Please enter the player name",
+                    "radio options" : None
+                    },
+                    {
+                    "prompt" : "Please enter the player number",
+                    "radio options" : "integer"
+                    },
+                ]
+            }
             
         # count the number of entries we are expecting
         self.request_threshold = len(self.config_dict["requests"]) - 1
@@ -110,18 +127,25 @@ class NewGameWindow():
         self.request_label = tk.Label(self.request_frame, text=request_text, font=('Arial', 14))
         self.request_label.pack(pady=10)
 
+        # set up a variable to handle the user input
+        self.user_entry = tk.StringVar()
+
         # add the user entry widget
         if self.config_dict["requests"][self.request_number]["radio options"] == None:
             # must be a text entry, add a box for the user to enter text information
-            self.entry_box = tk.Text(self.request_frame, height=1, width=20, font=('Arial', 16))
+            self.entry_box = ttk.Entry(self.request_frame, textvariable=self.user_entry, width=20)
+            self.entry_box.pack(pady=5)
+            self.entry_box.bind("<Return>", self.submit_info)
+        elif self.config_dict["requests"][self.request_number]["radio options"] == "integer":
+            # looking for an integer entry
+            self.entry_box = tk.Text(self.request_frame, height=1, width=5, font=('Arial', 16))
             self.entry_box.pack(pady=5)
             self.entry_box.bind("<Return>", self.submit_info)
         else:
             # add a set of radio buttons
-            self.choice = tk.StringVar()
             self.radio_dict = {}
             for option in self.config_dict["requests"][self.request_number]["radio options"]:
-                self.radio_dict[option] = ttk.Radiobutton(self.request_frame, text=option, variable=self.choice, value=option)
+                self.radio_dict[option] = ttk.Radiobutton(self.request_frame, text=option, variable=self.user_entry, value=option)
                 self.radio_dict[option].pack(pady=3)
 
         # add a submit button
@@ -143,12 +167,15 @@ class NewGameWindow():
         self.game_metadata_window.grab_set()        # ensure all input goes to our window
         self.game_metadata_window.wait_window()     # block until window is destroyed
 
-    def submit_info(self, none=1):
+    def submit_info(self, enter_pressed=1):
         """Gets the written information and checks if it is good"""
 
         if self.config_dict["requests"][self.request_number]["radio options"] == None:
             # must be a text entry
             self.check_text_entry()
+        elif self.config_dict["requests"][self.request_number]["radio options"] == "integer":
+            # looking for an integer entry
+            self.check_integer_entry()
         else:
             # must be a radio entry
             self.check_radio_entry()
@@ -157,12 +184,14 @@ class NewGameWindow():
         """Checks whether the user has submitted a valid text entry"""
 
         # get the entry from the box
-        entry = self.entry_box.get('1.0', tk.END)
-        entry = entry[:-1] # take off the new line that gets added
+        entry = self.user_entry.get()
 
         if len(entry) > 10 or len(entry) < 1:
-            status_message = "Entry does not meet length requirements (max 10 characters)"
-            self.status_label.config(text=status_message)
+            self.error_message = "Entry does not meet length requirements (max 10 characters)"
+            self.respond_to_invalid_entry()
+        elif entry in self.invalid_entries:
+            self.error_message = "Player number already taken"
+            self.respond_to_invalid_entry()
         else:
             # add the information to the output list
             self.output_data.append(entry)
@@ -170,11 +199,44 @@ class NewGameWindow():
             # see what needs to happen next
             self.follow_successful_entry()
 
+    def check_integer_entry(self):
+        """Check to see if the given entry is a suitable integer"""
+
+        # get the entry from the box
+        entry = self.entry_box.get('1.0', tk.END)
+        entry = entry[:-1] # take off the new line that gets added
+
+        # set up an error flag
+        self.error_message = None
+
+        try:
+            player_number = int(entry)
+        except ValueError:
+            self.error_message = "Number entered must be an integer with no other characters"
+        else:
+            if player_number < 0:
+                self.error_message = "Player number must be at least zero"
+            elif player_number > 999:
+                self.error_message = "Player number must be less than 1000"
+            elif player_number in self.invalid_entries:
+                self.error_message = "Player number already taken"
+            
+        if self.error_message == None:
+            # add the information to the output list
+            self.output_data.append(player_number)
+
+            # see what needs to happen next
+            self.follow_successful_entry()
+            
+        else:
+            self.respond_to_invalid_entry()
+            
+
     def check_radio_entry(self):
         """Check to see if the user has picked an option"""
 
         # get the chosen variable
-        x = self.choice.get()
+        x = self.user_entry.get()
 
         if x in self.config_dict["requests"][self.request_number]["radio options"]:
             # add the information to the output list
@@ -184,8 +246,14 @@ class NewGameWindow():
             self.follow_successful_entry()
         else:
             # the user must have not chosen an option yet.
-            status_message = "Please select an option, then click submit"
-            self.status_label.config(text=status_message)
+            self.error_message = "Please select an option, then click submit"
+            self.status_label.config(text=self.error_message)
+
+    def respond_to_invalid_entry(self):
+        """Carries out actions if the user entered an invalid answer"""
+
+        # display the error message
+        self.status_label.config(text=self.error_message)
 
     def follow_successful_entry(self):
 
