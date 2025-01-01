@@ -254,6 +254,8 @@ class MainGUI():
         # create a loop for each game
         for game_number in range(self.tournament_metadata['Number of Games']):
 
+            game_number += 1 # start on 1, not 0
+
             # establish the game tag
             game_tag = "Game " + str(game_number)
 
@@ -311,16 +313,12 @@ class MainGUI():
         data_provision_success, provided_info = window.return_info()
 
         if data_provision_success == True:
-            # if we successfully get the data, then copy it out to relevant variables
-            self.opp_name = provided_info[0]
-            self.team_on_defence = provided_info[1]
-
-            # start the new game
-            self.start_new_game()
+            # if we successfully get the data, then start the new game
+            self.start_new_game(provided_info[0], provided_info[1])
 
             # if not then nothing happens
 
-    def start_new_game(self):
+    def start_new_game(self, opp_name, team_on_defence):
         """Sets up all the classes and methods needed for a new game"""
         
         # disable the new game button
@@ -330,13 +328,13 @@ class MainGUI():
         self.number_of_games += 1
 
         # add the new opposition team to the main DF (same as for a player)
-        self.team.add_player_to_main_DF(self.opp_name)
+        self.team.add_player_to_main_DF(opp_name)
 
         # Assign a name to the game
         game_class_ref = "Game " + str(self.number_of_games)
 
         # create a new class with the assembled input data
-        self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, self.opp_name, self.team_on_defence)
+        self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, opp_name, team_on_defence)
 
         # make a note of what the active game is called
         self.active_game = game_class_ref
@@ -348,7 +346,7 @@ class MainGUI():
         self.team.add_players_to_stats_page(game_class_ref)
 
         # create a live game tab
-        self.live_game = LiveGame(self, self.opp_name, self.number_of_games, self.team_on_defence)
+        self.live_game = LiveGame(self, opp_name, self.number_of_games, team_on_defence)
 
     def run_machine_learning_analysis(self):
         """When called this method will run all the necessary functions to produce the player coefficients"""
@@ -481,6 +479,7 @@ class MainGUI():
 
 # call the main code
 if __name__ == "__main__":
+    print("Program starting...")
     tournament_gui = MainGUI()
 
     print("Check results")

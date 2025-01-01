@@ -107,7 +107,7 @@ class DataExtractor():
         self.tournament_metadata["Number of Games"] += 1
 
         # set up the reference name of the game and log info
-        game_name = "Game " + game_number_string + " vs " + game_opponent
+        game_name = "Game " + game_number_string
         self.raw_game_data[game_name] = {
             "Opponent" : game_opponent,
             "Starting on Defence" : team_start_on_defence,

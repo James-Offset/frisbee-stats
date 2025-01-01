@@ -5,18 +5,20 @@ from tkinter import ttk
 
 class AwardsTab():
     def __init__(self, parent):
-        """TBC"""
+        """Copy out variables and set up the GUI"""
 
+        # copy out needed variables
         self.parent = parent
-
         self.tour_name = self.parent.tournament_name
 
+        # create the list of awards
         self._establish_awards()
 
+        # build the GUI
         self._create_notebook_tab()
 
     def _establish_awards(self):
-        """Creates the data structure for the awards"""
+        """Creates the data structure for the awards and link them to the calcualtion method"""
 
         self.awards_definitions = {
             "MVP" :             ["Most Valuable Player", self.mvp_cal],
@@ -123,6 +125,7 @@ class AwardsTab():
         # add award columns
         self.row_number = 1
 
+        # create a new row for each award
         for award in self.awards_definitions:
             # increment row number
             self.row_number += 1
@@ -173,6 +176,7 @@ class AwardsTab():
 
             # compare this with the current high score
             if score > self.winners[award]["Highest Recorded Score"]:
+                # update the new high score and add the player name
                 self.winners[award]["Highest Recorded Score"] = score
                 self.winners[award]["Holder of Highest Score"] = player
             elif score == self.winners[award]["Highest Recorded Score"]:

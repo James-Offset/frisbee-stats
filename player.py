@@ -1,7 +1,4 @@
-"""Any data that needs to be stored or processed at the player level is stored here
-
-Not sure if this is necessary at this point, but we can set up a class if needed. 
-"""
+"""Any data that needs to be stored or processed at the player level is stored here"""
 
 """Third Party Code"""
 import tkinter as tk
@@ -24,14 +21,16 @@ class Player():
         # set up the data structures for the class
         self._create_data_structures()
 
+        # create a dictionary to track how often this player is on the pitch with each teammate
+        self._create_teammates_dictionary()
+
 
     def _create_data_structures(self):
         """ Creates all the dictionaries that player data and gui information will be stored, as well as templates for sub-dictionaries"""
 
-        # performance data will be stored in a series of nesting dictionaries of levels 0-4
+        # performance data will be stored in a series of nesting dictionaries of levels 0-3
 
-        # Level 4 holds the stats
-        # Level 3 combines these into one dictionary
+        # Level 3 holds the stats
         self.template_zone_stats = {
             "name" : self.name,
             "number" : self.number,
@@ -97,8 +96,6 @@ class Player():
             "total score",
         ]
 
-        self._create_teammates_dictionary()
-
     def _create_teammates_dictionary(self):
         """Adds a sub dictionary for each team mate into the dictionary of teammate comparison entries"""
 
@@ -147,8 +144,6 @@ class Player():
     def prepare_to_receive_data(self, data_tab):
         """when a new stats roster tab is created this function creates sub-dictionaries to recieve data and adds the player details to the table"""
 
-        #!! consider re-drawing entire grid in alphabetical order
-
         # find out what the reference for the new data tab is (tournament name or game ref)
         self.live_game_ref = data_tab
 
@@ -162,13 +157,13 @@ class Player():
             # add the player to the relevant stats tab
             self.add_player_to_gui_tab()
             
-            # create a new sub-dictionary for the game
+            # create a new sub-dictionary of teammate stats for the game
             self.teammate_records[data_tab] = copy.deepcopy(self.teammate_list_template)
 
     def add_player_class_for_whole_team_to_gui(self):
         """Adds team info to the team frame on the stats page"""
 
-        # create a sub-dictionary to hold all of the gui elements that will go into the stats tab !! duplicated, so can be moved to __init__
+        # create a sub-dictionary to hold all of the gui elements that will go into the stats tab
         self.gui_labels_dicts[self.live_game_ref] = {}
 
         # each stat will be shown on a new row
@@ -183,7 +178,7 @@ class Player():
                 row_number += 1
 
                 # create a label for the stat description
-                stat_text = stat #!! capitalise later
+                stat_text = stat.capitalize()
                 self.gui_labels_dicts[self.live_game_ref][stat] = tk.Label(self.parent.team_frame[self.live_game_ref], text=stat_text, font=('Arial', 16))
                 self.gui_labels_dicts[self.live_game_ref][stat].grid(row=row_number, column=0, sticky='ew')
 
@@ -210,7 +205,7 @@ class Player():
             # increment column number then check if we want a separator
             column_number += 1
             if column_number in self.parent.pf_separator_columns:
-                column_number += 1
+                column_number += 1 # skip over columns with separators
         
         # make sure the name and number are showing
         for stat in ("name" , "number"):
@@ -235,7 +230,7 @@ class Player():
         # store each statistic in both the game dictionaries and the tournament dictionaries
         for data_set in (self.live_game_ref, self.tournament_name):
             for game_event in stats_input:
-                # update each input stat in turn
+                # use the dictionary of counts from the point that just ended to update each input stat in turn
                 self.data_dict[data_set][zone][game_event] += stats_input[game_event]
 
                 # add this information for the teammate subdictionary for each team mate on the pitch
@@ -298,13 +293,13 @@ class Player():
         # data sufficiency checks, player must have done and not done at least 5 offence and defence possessions
         sufficient_data = False
 
-        if self.data_dict[self.live_game_ref]["bench"]["no. offence possessions"] < self.parent.requ_o_possessions:
-            pass
-        elif  self.data_dict[self.live_game_ref]["bench"]["no. defence possessions"] < self.parent.requ_d_possessions:
-            pass
-        elif self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] < self.parent.requ_o_possessions:
-            pass
-        elif self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] > self.parent.requ_d_possessions - 1:
+        if self.data_dict[self.live_game_ref]["bench"]["no. offence possessions"] < self.parent.min_num_possessions:
+            pass # player was not on the bench for at least the requred number of o possessions
+        elif  self.data_dict[self.live_game_ref]["bench"]["no. defence possessions"] < self.parent.min_num_possessions:
+            pass # player was not on the bench for at least the requred number of d possessions
+        elif self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] < self.parent.min_num_possessions:
+            pass # player was not on the pitch for at least the requred number of o possessions
+        elif self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] > self.parent.min_num_possessions - 1:
             sufficient_data = True
 
         # for the game that has just ended, calculate the stats
@@ -344,6 +339,7 @@ class Player():
     def _calculate_tournament_marginal_stats(self):
         """Tournament marginal stats must be weighted for each game so are calculated differently. Only pitch matters for this"""
 
+        # for each stat work out the average performance across all games
         for stat in self.marginal_display_stats:
             # remove the word marginal when we look in comparison
             comparison_stat = stat.replace("marginal ", "")
@@ -353,7 +349,7 @@ class Player():
         self.update_player_gui_display(self.tournament_name)
 
     def calculate_mean_stats(self, zone, stat):
-        """Averages a stat across all games so it can be put on the tournamnet-level display"""
+        """Averages a stat across all games so it can be put on the tournament-level display"""
         # set a blank variable to be updated with the performance in each game
         stat_aggregate = 0
         number_of_games = 0
@@ -400,18 +396,13 @@ class Player():
             if teammate == self.name or self.name == self.parent.team_name:
                 pass
             else:
-                # check for sufficient offensive possessions
+                # work out how many o possesions this player had with and without their teammate
                 op_with = self.teammate_records[self.live_game_ref][teammate]["no. offence possessions"]
                 op_without = self.data_dict[self.live_game_ref]["pitch"]["no. offence possessions"] - op_with
                 self.teammate_records[self.live_game_ref][teammate]["offence poss without"] = op_without
-                try:
-                    o_ratio = op_with / (op_with + op_without)
-                except ZeroDivisionError:
-                    o_ratio = 0
 
-                if o_ratio < self.parent.player_v_player_ratio or 1-o_ratio < self.parent.player_v_player_ratio:
-                    pass
-                else: 
+                # check for sufficient offensive possessions
+                if op_with >= self.parent.min_num_crossovers and op_without >= self.parent.min_num_crossovers:
                     # calcualte key inputs
                     tc_with = self.teammate_records[self.live_game_ref][teammate]["turnovers conceded"]
                     tc_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers conceded"] - tc_with
@@ -420,15 +411,13 @@ class Player():
                     self.teammate_records[self.live_game_ref][teammate]["with o conv"] = round(100 * (1 - (tc_with / op_with)))
                     self.teammate_records[self.live_game_ref][teammate]["without o conv"] = round(100 * (1 - (tc_without / op_without)))
 
-                # check for sufficient defensive possessions
+                # work out how many o possesions this player had with and without their teammate
                 dp_with = self.teammate_records[self.live_game_ref][teammate]["no. defence possessions"]
                 dp_without = self.data_dict[self.live_game_ref]["pitch"]["no. defence possessions"] - dp_with
                 self.teammate_records[self.live_game_ref][teammate]["defence poss without"] = dp_without
-                d_ratio = dp_with / (dp_with + dp_without)
-
-                if d_ratio < self.parent.player_v_player_ratio or 1-d_ratio < self.parent.player_v_player_ratio:
-                    pass
-                else: 
+                
+                # check for sufficient offensive possessions
+                if dp_with >= self.parent.min_num_crossovers and dp_without >= self.parent.min_num_crossovers:
                     # calcualte key inputs
                     tw_with = self.teammate_records[self.live_game_ref][teammate]["turnovers won"]
                     tw_without = self.data_dict[self.live_game_ref]["pitch"]["turnovers won"] - tw_with

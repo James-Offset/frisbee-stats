@@ -9,8 +9,6 @@ from tkinter import ttk
 from player import Player
 from awards_tab import AwardsTab
 
-
-
 class Team():
     """A class to manage all the functions relating to the team roster"""
 
@@ -21,8 +19,8 @@ class Team():
         self.parent = parent
 
         # set the threshold of what counts a significant ratio of data
-        self.player_v_team_ratio = 0.2
-        self.player_v_player_ratio = 0.25
+        self.min_num_possessions = 4
+        self.min_num_crossovers = 4
 
         # create a dictionary to hold the player classes
         self.number_of_players = 0 
@@ -34,13 +32,13 @@ class Team():
         self.team_frame = {} # holds the team info table
         self.player_frame = {} # holds the player info table
 
-        # create dictionaries to hold gui display elements within those frames
+        # create dictionaries to hold gui display elements within those frames (team frame and player frame)
         self.tf_heading_elements = {}
         self.tf_separator_elements = {}
         self.pf_heading_elements = {}
         self.pf_separator_elements = {}
 
-        # Get tournament name !!"MIR 2017"
+        # Get tournament name
         self.tournament_name = parent.tournament_name
         self.team_name = parent.team_name
 
@@ -85,16 +83,17 @@ class Team():
             "Team Performance",
             ".",
             ]
-        # <<< These correspond to ???
         
+        # create a dictionary to store the heading elements
         self.tf_heading_elements[tab_name] = {}
         
-        # decide where to put separators
+        # decide where to put separators (currently none)
         self.tf_separator_columns = []
 
         # create a dictionary to keep the separators in
         self.tf_separator_elements[tab_name] = {}
 
+        # create column for each heading
         column_number=0
         for heading in self.team_gui_headings:
             
@@ -150,6 +149,7 @@ class Team():
         # create a dictionary to keep the separators in
         self.pf_separator_elements[tab_name] = {}
 
+        # for each heading, create a column
         column_number=0
         for heading in self.player_gui_headings:
             
@@ -171,12 +171,12 @@ class Team():
             column_number += 1
 
     def check_manual_player_entry(self, name_entry, number_entry):
-        """Checks whether the user input is valid"""
+        """Checks whether the user input for a new player is valid"""
 
         # set an error as the default
         error_message = None
 
-        # check the number first, so name error overrides. Start with check for integer
+        # check the number first, so name error overrides it they are both invalid. Start with check for integer
         try:
             player_number = int(number_entry)
         except ValueError:
@@ -209,6 +209,7 @@ class Team():
             # add the player to the roster
             self.new_player_entry(name_entry, player_number)
             error_message = "Player successfully added to roster"
+            # clear the entry boxes
             self.parent.player_name_box.delete('1.0', tk.END)
             self.parent.player_number_box.delete('1.0', tk.END)
         
@@ -246,19 +247,24 @@ class Team():
             for separator in self.pf_separator_elements[tab_name]:
                 self.pf_separator_elements[tab_name][separator].grid(row=0 , rowspan=self.display_row_number+1, column = int(separator), sticky='ns', padx=2)
 
+        # sort the order of the players at each location so that they are alphabetical
         self._sort_player_order()
 
     def _sort_player_order(self):
         """When a new player is added to the roster, they need to be included at the right alphabetical location and all previous
         displays should be updated"""
 
+        # get the list of players and sort the list
         list_of_players = list(self.roster.keys())
         list_of_players.sort()
+
+        # for each player in the order of the new list, update their display row number
         player_order_number = 0
         for player in list_of_players:
             player_order_number += 1
             self.roster[player].display_row_number = player_order_number
 
+            # and call the function to move their display elements for each game
             for game in self.game_stats_pages:
                 self.roster[player].update_display_rows(game)
 
@@ -275,7 +281,7 @@ class Team():
             self.pf_separator_elements[tab_name][separator].grid(row=0 , rowspan=self.display_row_number+1, column = int(separator), sticky='ns', padx=2)
 
     def add_player_to_main_DF(self, player_name):
-        """When a new player is added to the roster, this method adds a new column to the DataFrames"""
+        """When a new player is added to the roster, this method adds a new column to the DataFrames for machine learning"""
 
         # add the new player to the list of data frame headings
         self.parent.data_frame_headings.append(player_name)
@@ -296,12 +302,6 @@ class Team():
 
     def end_of_game_calcs(self):
         """Calls each player class to run their comparison calcs"""
-
-        # work out the minimum number of possessions required to be considered noteworthy (20%)
-        team_o_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
-        self.requ_o_possessions = round(team_o_poss * self.player_v_team_ratio)
-        team_d_poss = self.team_record.data_dict[self.parent.active_game]["pitch"]["no. offence possessions"]
-        self.requ_d_possessions = round(team_d_poss * self.player_v_team_ratio)
 
         # work out the performance of the team
         self.team_record.update_team_performance()
