@@ -43,6 +43,7 @@ class DataExtractor():
             "Tournament Name" : sheet['B2'].value,
             "Players per Point" : sheet['E17'].value,
             "Number of Games" : 0,
+            "Environment" : "Outdoors",
         }
 
 

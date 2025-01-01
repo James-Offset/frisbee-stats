@@ -144,6 +144,8 @@ class MainGUI():
         if data_provision_success == True:
             # if we successfully get the data, copy it out, if not then nothing happens
             self.program_type = provided_info[0]
+            self.environment = provided_info[1]
+            self.number_of_players_at_once = int(provided_info[2]) 
 
             # reconfigure for the next data entry
             if self.program_type == "Tournament":
@@ -164,7 +166,6 @@ class MainGUI():
             # if we successfully get the data, copy it out
             self.tournament_name = provided_info[0]
             self.team_name = provided_info[1]
-            self.number_of_players_at_once = int(provided_info[2]) 
 
             # continue with the set up
             self.complete_set_up()
@@ -183,18 +184,20 @@ class MainGUI():
         self.new_player_button.state(["!disabled"])
         
         # set up storage for tournament data for machine learning
-        self.o_df = pd.DataFrame({
-            "Success" : [],
-        })
+        self.mldf = {}
+        for poss_type in ("offence", "defence"):
+            self.mldf[poss_type] = pd.DataFrame({
+                "Success" : [],
+            })
 
-        self.d_df = pd.DataFrame({
-            "Success" : [],
-        })
-
+        # add an empty headings list
         self.data_frame_headings = []
 
     def extract_stock_data(self):
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
+
+        #!!
+        self.environment = "Outdoors"
 
         # check if we have extracted the data already
         if self.data_extracted == False:
@@ -316,14 +319,19 @@ class MainGUI():
         # increment game number
         self.number_of_games += 1
 
-        # add the new opposition team to the main DF (same as for a player)
-        self.team.add_player_to_main_DF(opp_name)
-
         # Assign a name to the game
         game_class_ref = "Game " + str(self.number_of_games)
 
+        # add the new opposition team to the main DF (same as for a player)
+        self.team.add_player_to_main_DF(opp_name)
+
+        # if the game is played outdoors, add a factor for the wind as well
+        if self.environment == "Outdoors":
+            wind_name = game_class_ref + " Wind"
+            self.team.add_player_to_main_DF(wind_name)
+
         # create a new class with the assembled input data
-        self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, opp_name, team_on_defence)
+        self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, opp_name, team_on_defence, wind_name)
 
         # make a note of what the active game is called
         self.active_game = game_class_ref
@@ -340,41 +348,51 @@ class MainGUI():
     def run_machine_learning_analysis(self):
         """When called this method will run all the necessary functions to produce the player coefficients"""
 
-        # create our matricies that capture the x and y data for machine learning
-        self.ml_poss_factors_o = self.o_df.drop(columns=["Success"])
-        self.ml_success_o = self.o_df["Success"]
+        # set up necessary dictionarys to hold offence and defence variables
+        self.variable_factors = {}
+        self.success_counts = {}
+        self.input_training_data = {}
+        self.input_test_data = {}
+        self.output_training_data = {}
+        self.output_test_data = {}
+        self.output_predictions = {}
+
+        for poss_type in ("offence", "defence"):
+            # run the calculations
+            self.machine_learning_computation(poss_type)
+
+    def machine_learning_computation(self, poss_type):
+        """Runs the computational steps for offence or defence"""
+
+        print(f"\n--- Analysing {poss_type} data: ---\n")
+
+        # create our matricies that capture the x and y data for machine learning, aka separate the inputs and outputs
+        self.variable_factors[poss_type] = self.mldf[poss_type].drop(columns=["Success"])
+        self.success_counts[poss_type] = self.mldf[poss_type]["Success"]
         
         # split the data into training and test datasets
-        x_train_o, x_test_o, y_train_o, y_test_o = train_test_split(self.ml_poss_factors_o, self.ml_success_o, test_size=0.25, random_state=14)
+        self.input_training_data[poss_type], self.input_test_data[poss_type], self.output_training_data[poss_type], self.output_test_data[poss_type] = train_test_split(self.variable_factors[poss_type], self.success_counts[poss_type], test_size=0.25, random_state=14)
 
         # Initialize logistic regression model with L2 regularization (default)
-        model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
+        self.model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
 
         # Fit the model to the training data
-        model.fit(x_train_o, y_train_o)
+        self.model.fit(self.input_training_data[poss_type], self.output_training_data[poss_type])
 
         # Predict on the test set
-        y_pred = model.predict(x_test_o)
+        self.output_predictions[poss_type] = self.model.predict(self.input_test_data[poss_type])
 
-        # Evaluate performance
-        print("Accuracy:", accuracy_score(y_test_o, y_pred))
-        print("\nConfusion Matrix:\n", confusion_matrix(y_test_o, y_pred))
-        print("\nClassification Report:\n", classification_report(y_test_o, y_pred))
+        print(f"\n** Default Settings **")
 
-        # Get the coefficients
-        coefficients = model.coef_[0]  # Coefficients for each feature
-        players = self.ml_poss_factors_o.columns            # Feature names
+        self.print_machine_learning_outputs(poss_type)
 
-        # Combine into a DataFrame for easy interpretation
-        player_performance = pd.DataFrame({
-            'Player': players,
-            'Impact': coefficients
-        }).sort_values(by='Impact', ascending=False)
+        print(f"\n** Grid Search Settings **")
 
-        print(player_performance)
+        self.refine_parameters(poss_type)
+        self.print_machine_learning_outputs(poss_type)
 
-        #def refine_parameters(self):
-        #"""Uses cross validation to refine the machine learning model"""
+    def refine_parameters(self, poss_type):
+        """Uses cross validation to refine the machine learning model"""
 
         # Define the parameter grid
         param_grid = {
@@ -385,26 +403,30 @@ class MainGUI():
 
         # Initialize the grid search
         grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=3, scoring='accuracy' ,return_train_score=True, verbose=10)
-        grid_search.fit(x_train_o, y_train_o)
+        grid_search.fit(self.input_training_data[poss_type], self.output_training_data[poss_type])
 
         # Best parameters
         print("Best parameters:", grid_search.best_params_)
 
         # show the parameters for the best version
         best_model = grid_search.best_estimator_
-        print(best_model.score(x_test_o, y_test_o))
+        print(best_model.score(self.input_test_data[poss_type], self.output_test_data[poss_type]))
 
         # Predict on the test set
-        y_pred = best_model.predict(x_test_o)
+        self.output_predictions[poss_type] = best_model.predict(self.input_test_data[poss_type])
+
+
+    def print_machine_learning_outputs(self, poss_type):
+        """prints the outputs of the machine learning analysis"""
 
         # Evaluate performance
-        print("Accuracy:", accuracy_score(y_test_o, y_pred))
-        print("\nConfusion Matrix:\n", confusion_matrix(y_test_o, y_pred))
-        print("\nClassification Report:\n", classification_report(y_test_o, y_pred))
+        print("Accuracy:", accuracy_score(self.output_test_data[poss_type], self.output_predictions[poss_type]))
+        print("\nConfusion Matrix:\n", confusion_matrix(self.output_test_data[poss_type], self.output_predictions[poss_type]))
+        print("\nClassification Report:\n", classification_report(self.output_test_data[poss_type], self.output_predictions[poss_type]))
 
         # Get the coefficients
-        coefficients = best_model.coef_[0]  # Coefficients for each feature
-        players = self.ml_poss_factors_o.columns            # Feature names
+        coefficients = self.model.coef_[0]  # Coefficients for each feature
+        players = self.variable_factors[poss_type].columns            # Feature names
 
         # Combine into a DataFrame for easy interpretation
         player_performance = pd.DataFrame({
@@ -419,6 +441,15 @@ class MainGUI():
 
         # establish file name
         filename = "stored_data/" + self.tournament_name + ".json"
+
+        # collect tournament metadata
+        self.tournament_metadata = {
+            "Team Name" : self.team_name,
+            "Tournament Name" : self.tournament_name,
+            "Players per Point" : self.number_of_players_at_once,
+            "Number of Games" : self.number_of_games,
+            "Environment" : self.environment,
+        }
 
         # establish a list of players
         player_dict = {}

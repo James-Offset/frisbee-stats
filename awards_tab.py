@@ -143,7 +143,7 @@ class AwardsTab():
             self.gui_awards_descriptions[award].grid(row=self.row_number , column = 2, pady=4)
 
 
-    def calcualte_awards(self):
+    def calculate_awards(self):
         """Calculates the scores for each player, and thus who wins the award"""
         
         # run through each player

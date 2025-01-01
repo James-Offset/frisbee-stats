@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 
 class FrisbeeGame():
-    def __init__(self, parent, game_number, opp_name, defence_start):
+    def __init__(self, parent, game_number, opp_name, defence_start, wind_name=None):
         """This stores the core infomation"""
 
         # copy out useful variables
@@ -15,6 +15,7 @@ class FrisbeeGame():
         self.name = "G" + str(game_number) + " vs " + opp_name[:7]
         self.opp_name = opp_name
         self.defence_start = defence_start
+        self.wind_name = wind_name
 
         # create a new tab in the GUI
         self.game_page = tk.Frame(self.parent.notebook)
@@ -110,6 +111,22 @@ class FrisbeeGame():
         self.point_number = 0
         self.live_team_score = 0
         self.live_opp_score = 0
+        self.wind_direction = 1
+
+        # find out which row position in the dataframe refers to the wind direction
+        if self.wind_name == None:
+            # playing indoors, no wind
+            pass
+        else:
+            # start a count at 1 because of how the data frame works
+            self.wind_row_index = 1 
+            for i in self.parent.data_frame_headings:
+                # if the heading is the same as the wind name, we found the position
+                if i == self.wind_name:
+                    break
+                else:
+                    # increment the count
+                    self.wind_row_index += 1
 
     def establish_start_indicator(self, half_time):
         """At the beginning of the game, or after half time, set the indicator for who starts on offence"""
@@ -129,6 +146,9 @@ class FrisbeeGame():
 
         # log switch of possession
         self.establish_start_indicator(True)
+
+        # change the wind direction
+        self.wind_direction *= -1
 
     def evaluate_point(self, number_of_turns, list_of_active_players):
         """Takes the information from a completed point and updates necessary variables"""
@@ -157,6 +177,9 @@ class FrisbeeGame():
         
         # update the main DataFrame which is used for machine learning
         self.update_main_data_frame()
+
+        # change the wind direction
+        self.wind_direction *= -1
 
         # feed the score text value back to the live game tab
         return self.live_score_text
@@ -287,22 +310,29 @@ class FrisbeeGame():
             else:
                 new_row.append(0)
 
+        # fix the indicator for the wind direction
+        if self.wind_name == None:
+            # playing indoors, no wind
+            pass
+        else:
+            new_row[self.wind_row_index] = self.wind_direction
+
         # each time we concede a turnover, copy out the row
         for i in range(self.turnovers_conceded):
-            self.parent.o_df.loc[len(self.parent.o_df)] = new_row
+            self.parent.mldf["offence"].loc[len(self.parent.mldf["offence"])] = new_row
 
         # if we lose the point, copy out the row
         if self.team_point == 0:
-            self.parent.d_df.loc[len(self.parent.d_df)] = new_row
+            self.parent.mldf["defence"].loc[len(self.parent.mldf["defence"])] = new_row
 
         # switch to logging team successes
         new_row[0] = 1
 
         # for each possesion won, copy out the row
         for i in range(self.turnovers_won):
-            self.parent.d_df.loc[len(self.parent.d_df)] = new_row
+            self.parent.mldf["defence"].loc[len(self.parent.mldf["defence"])] = new_row
 
         # if we scored the point, copy out the row
         if self.team_point == 1:
-            self.parent.o_df.loc[len(self.parent.o_df)] = new_row
+            self.parent.mldf["offence"].loc[len(self.parent.mldf["offence"])] = new_row
 

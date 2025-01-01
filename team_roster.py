@@ -288,17 +288,17 @@ class Team():
 
         # add a new column of zeros for the o possessions
         new_o_column = []
-        for possession in self.parent.o_df["Success"]:
+        for possession in self.parent.mldf["offence"]["Success"]:
             new_o_column.append(0)
         
-        self.parent.o_df[player_name] = new_o_column
+        self.parent.mldf["offence"][player_name] = new_o_column
 
         # add a new column of zeros for the d possessions
         new_d_column = []
-        for possession in self.parent.d_df["Success"]:
+        for possession in self.parent.mldf["defence"]["Success"]:
             new_d_column.append(0)
         
-        self.parent.d_df[player_name] = new_d_column
+        self.parent.mldf["defence"][player_name] = new_d_column
 
     def end_of_game_calcs(self):
         """Calls each player class to run their comparison calcs"""
@@ -315,4 +315,4 @@ class Team():
             self.roster[player].calculate_entanglement_factor()
         
         # update awards
-        self.awards_class.calcualte_awards()
+        self.awards_class.calculate_awards()

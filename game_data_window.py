@@ -50,6 +50,14 @@ class NewGameWindow():
                     "prompt" : "Choose the program you want to run:",
                     "radio options" : ["Tournament", "Scrimmage"]
                     },
+                    {
+                    "prompt" : "What is the environment?",
+                    "radio options" : ["Outdoors", "Indoors"]
+                    },
+                    {
+                    "prompt" : "How many players per side?",
+                    "radio options" : ["5", "7"]
+                    },
                 ]
             }
 
@@ -65,10 +73,6 @@ class NewGameWindow():
                     {
                     "prompt" : "Please enter your team name",
                     "radio options" : None
-                    },
-                    {
-                    "prompt" : "How many players per side?",
-                    "radio options" : ["5", "7"]
                     },
                 ]
             }
