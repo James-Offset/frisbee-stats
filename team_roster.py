@@ -27,12 +27,21 @@ class Team():
         self.min_num_possessions = 4
         self.min_num_crossovers = 4
 
+        # create the list of stats that will be used
+        self._set_up_stats_dictionary()
+
         # create a dictionary to hold the player classes
         self.number_of_players = 0 
         self.display_row_number = 0
         self.roster={}
 
-        # create a dictionary to hold the display frames for the tabs
+        # create a player class that actually represents the whole team
+        self.team_record = Player(self, self.team_name, 0, -1, self.dictionary_of_stats)
+
+        # set up a simple tab where the user can enter the player info. this is handled by a new class
+        self.roster_tab = RosterTab(self)
+
+        # create a dictionary to hold the display frames for the tabs  !! compress all these dictionaries if you have time
         self.game_stats_pages = {} # holds the other two frames
         self.team_frame = {} # holds the team info table
         self.player_frame = {} # holds the player info table
@@ -42,12 +51,6 @@ class Team():
         self.tf_separator_elements = {}
         self.pf_heading_elements = {}
         self.pf_separator_elements = {}
-
-        # create a player class that actually represents the whole team
-        self.team_record = Player(self, self.team_name, 0, -1)
-
-        # set up a simple tab where the user can enter the player info. this is handled by a new class
-        self.roster_tab = RosterTab(self)
 
         # put a roster page on the main GUI for the full tournaments stats
         self.build_game_stats_page(self.tournament_name)
@@ -129,23 +132,6 @@ class Team():
 
         # configure the tab frame
         self.game_stats_pages[tab_name].grid_rowconfigure(1, weight=1)
-
-        # create a dictionary to hold the details of the GUI columns
-        self.player_gui_headings = [
-            "Player", 
-            "#", 
-            "PP", 
-            "OP",
-            "DP",
-            "OC",
-            "DC",
-            "MO",
-            "MD",
-            "OS",
-            "DS", 
-            "TS",
-            ]
-        # <<< These correspond to the output stats in the player class
         
         self.pf_heading_elements[tab_name] = {}
         
@@ -157,24 +143,29 @@ class Team():
 
         # for each heading, create a column
         column_number=0
-        for heading in self.player_gui_headings:
-            
-            if column_number in self.pf_separator_columns:
-                # create a column for the separator
+        for stat in self.dictionary_of_stats:
+            heading = self.dictionary_of_stats[stat]["GUI Heading"]
+            if heading == None:
+                # stat not to be displayed
+                pass
+            else:
+                # create a new column and add the stat
+                if column_number in self.pf_separator_columns:
+                    # create a column for the separator
+                    self.player_frame[tab_name].columnconfigure(column_number, weight=1)
+                    self.pf_separator_elements[tab_name][str(column_number)] = ttk.Separator(self.player_frame[tab_name], orient="vertical")
+                    self.pf_separator_elements[tab_name][str(column_number)].grid(row=0 , rowspan=1, column = column_number, sticky='ns', padx=2)
+
+                    column_number += 1
+                
+                # create a column for the heading
                 self.player_frame[tab_name].columnconfigure(column_number, weight=1)
-                self.pf_separator_elements[tab_name][str(column_number)] = ttk.Separator(self.player_frame[tab_name], orient="vertical")
-                self.pf_separator_elements[tab_name][str(column_number)].grid(row=0 , rowspan=1, column = column_number, sticky='ns', padx=2)
+            
+                # add heading labels
+                self.pf_heading_elements[tab_name][heading] = tk.Label(self.player_frame[tab_name], text=heading, font=('Arial', 18))
+                self.pf_heading_elements[tab_name][heading].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
 
                 column_number += 1
-            
-            # create a column for the heading
-            self.player_frame[tab_name].columnconfigure(column_number, weight=1)
-        
-            # add heading labels
-            self.pf_heading_elements[tab_name][heading] = tk.Label(self.player_frame[tab_name], text=heading, font=('Arial', 18))
-            self.pf_heading_elements[tab_name][heading].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
-
-            column_number += 1
 
     def new_player_entry(self, player_name, player_number):
         """Creates a class to for a new player"""
@@ -195,7 +186,7 @@ class Team():
             self.roster[teammate].add_teammate_to_list(player_name)
 
         # create a new class
-        self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number)
+        self.roster[player_name] = Player(self, player_name, player_number, self.display_row_number, self.dictionary_of_stats)
 
         # add the player to the home page data frame
         self.add_player_to_main_DF(player_name)
@@ -277,3 +268,48 @@ class Team():
         
         # update awards
         self.awards_class.calculate_awards()
+
+    def _set_up_stats_dictionary(self):
+        """Creates a dictionary that holds the name of each stat we collect and how it is used"""
+
+        # lay out all the configuration of the stats we are going to use
+        self.awkward_list_of_stats = [
+            # stat name, 
+            # display flag [not displayed, displayed only once, displayed each point, displayed each game], 
+            # calc flag [not calculated, updated each point, basis for marginal calcs, marginal calc], 
+            # starting value
+            # Gui heading
+            ["name", 1, 0, "Player", ""],
+            ["number", 1, 0, "#", ""],
+            ["number of points played", 2, 1, "PP",0],
+            ["no. offence possessions", 2, 1, "OP",0],
+            ["no. defence possessions", 2, 1, "DP",0],
+        
+            ["number of possessions played", 0, 1, None, 0],
+            ["turnovers conceded", 0, 1, None, 0],
+            ["turnovers won", 0, 1, None, 0],
+            
+            ["offence conversion rate", 2, 2, "OC","-"],
+            ["defence conversion rate", 2, 2, "DC","-"],
+
+            ["o-line score", -1, 2, None, "-"],
+            ["d-line score", -1, 2, None, "-"],
+            ["total score", -1, 2, None, "-",],
+
+            ["marginal offence conversion rate", 3, 3, "MOC","-"],
+            ["marginal defence conversion rate", 3, 3, "MDC","-"],
+            
+            ["marginal o-line score", 3, 4, "MOS","-"],
+            ["marginal d-line score", 3, 4, "MDS","-"],
+            ["marginal total score", 3, 4, "MTS","-",],
+        ]
+
+        # Wrap the above into a dictionary holds every relevant stat
+        self.dictionary_of_stats = {}
+        for stat in self.awkward_list_of_stats:
+            self.dictionary_of_stats[stat[0]] = {
+                "Display Type" : stat[1],
+                "Calc Flag" : stat[2],
+                "GUI Heading" : stat[3],
+                "Start Value" : stat[4],
+            }

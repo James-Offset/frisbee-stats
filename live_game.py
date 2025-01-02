@@ -56,11 +56,11 @@ class LiveGame():
         # add the top row: Opp, Score, scorebox
         row_count+=1
 
-        self.opp_name = tk.Label(self.live_page, text=self.opp_name_text, font=('Arial', 18))
+        self.opp_name = tk.Label(self.live_page, text=self.opp_name_text, font=('Arial', 14))
         self.opp_name.grid(row=row_count , column = 0, sticky=tk.W + tk.E, columnspan=2, pady=5)
 
         self.score_readout = tk.StringVar()
-        self.live_score = tk.Label(self.live_page, textvariable=self.score_readout, font=('Arial', 18))
+        self.live_score = tk.Label(self.live_page, textvariable=self.score_readout, font=('Arial', 14))
         self.live_score.grid(row=row_count , column = 4, sticky=tk.W + tk.E)
         self.score_readout.set("Score: 0 - 0")
 
@@ -72,30 +72,30 @@ class LiveGame():
         # First row (after zero): Turnover Heading
         row_count += 1
 
-        self.turnover_label = tk.Label(self.live_page, text="Turnovers:", font=('Arial', 18))
+        self.turnover_label = tk.Label(self.live_page, text="Turnovers:", font=('Arial', 12))
         self.turnover_label.grid(row=row_count , column =0 , sticky=tk.W + tk.E, columnspan=3)
 
         self.posession_text = tk.StringVar()
-        self.posession_label = tk.Label(self.live_page, textvariable=self.posession_text, width=18, font=('Arial', 18))
+        self.posession_label = tk.Label(self.live_page, textvariable=self.posession_text, width=18, font=('Arial', 12))
         self.posession_label.grid(row=row_count , column =4 , sticky=tk.W + tk.E)
         self.posession_text.set(self.team_starting_on_O)
 
         # Second Row: minus, turns count, plus, space, end button
         row_count+=1
 
-        self.minus_button = tk.Button(self.live_page, text="-", font=('Arial', 20), width=3, command=self.minus_function)
+        self.minus_button = tk.Button(self.live_page, text="-", font=('Arial', 14), width=3, command=self.minus_function)
         self.minus_button.grid(row=row_count , column =0 , sticky= tk.E)
 
         self.turnover_count = 0
         self.turnover_count_value = tk.IntVar()
-        self.count_label = tk.Label(self.live_page, textvariable=self.turnover_count_value, font=('Arial', 18))
+        self.count_label = tk.Label(self.live_page, textvariable=self.turnover_count_value, font=('Arial', 14))
         self.count_label.grid(row=row_count , column =1 , sticky=tk.W + tk.E)
         self.turnover_count_value.set(self.turnover_count)
 
-        self.plus_button = tk.Button(self.live_page, text="+", font=('Arial', 20), width=3, command=self.plus_function)
+        self.plus_button = tk.Button(self.live_page, text="+", font=('Arial', 14), width=3, command=self.plus_function)
         self.plus_button.grid(row=row_count , column =2 , sticky=tk.W , pady=10)
 
-        self.end_button = tk.Button(self.live_page, text="End point", font=('Arial', 18), command=self.end_point)
+        self.end_button = tk.Button(self.live_page, text="End point", font=('Arial', 14), command=self.end_point)
         self.end_button.grid(row=row_count , column =4 , sticky=tk.W + tk.E)
 
         # Separator
@@ -106,10 +106,10 @@ class LiveGame():
         # third row: player name, player number, on pitch, blanks
         row_count+=1
 
-        self.r_head_1 = tk.Label(self.live_page, text="Player Name", font=('Arial', 18))
+        self.r_head_1 = tk.Label(self.live_page, text="Player Name", font=('Arial', 14))
         self.r_head_1.grid(row=row_count , column = 0, sticky=tk.W + tk.E, columnspan=2, pady=10)
 
-        self.r_head_2 = tk.Label(self.live_page, text="#", font=('Arial', 18))
+        self.r_head_2 = tk.Label(self.live_page, text="#", font=('Arial', 14))
         self.r_head_2.grid(row=row_count , column = 2, sticky=tk.W + tk.E)
         
         # create a roster table
@@ -121,11 +121,11 @@ class LiveGame():
             self.roster_widgets[player] = {}
 
             row_count+=1
-            self.roster_widgets[player]["name_col"] = tk.Label(self.live_page, text=player, font=('Arial', 16))
+            self.roster_widgets[player]["name_col"] = tk.Label(self.live_page, text=player, font=('Arial', 14))
             self.roster_widgets[player]["name_col"].grid(row=row_count , column =0 , sticky=tk.W + tk.E, columnspan=2)
 
             number_text = self.parent.team.roster[player].number
-            self.roster_widgets[player]["number_col"] = tk.Label(self.live_page, text=number_text, font=('Arial', 16))
+            self.roster_widgets[player]["number_col"] = tk.Label(self.live_page, text=number_text, font=('Arial', 14))
             self.roster_widgets[player]["number_col"].grid(row=row_count , column =2 , sticky=tk.W + tk.E)
 
             # add checkboxes here
@@ -138,12 +138,12 @@ class LiveGame():
         # Add a label showing the total number of players
         row_count_memory += 1
 
-        self.player_count_label = tk.Label(self.live_page, text="Players on:", font=('Arial', 16))
+        self.player_count_label = tk.Label(self.live_page, text="Players on:", font=('Arial', 14))
         self.player_count_label.grid(row=row_count_memory , column = 4, sticky=tk.W + tk.E + tk.N, columnspan=2)
 
         row_count_memory+=1
         self.player_count = tk.IntVar()
-        self.player_count_display = tk.Label(self.live_page, textvariable=self.player_count, width = 6, font=('Arial', 18), bg='gray90')
+        self.player_count_display = tk.Label(self.live_page, textvariable=self.player_count, width = 6, font=('Arial', 14), bg='gray90')
         self.player_count_display.grid(row=row_count_memory , column = 4)
         self.player_count.set(0)
 
@@ -158,7 +158,7 @@ class LiveGame():
         self.half_time_button.grid(row=row_count_memory, column=4)
 
         row_count_memory+=2
-        self.end_game_button = tk.Button(self.live_page, text="End Game", font=('Arial', 18), command=self.end_game_check)
+        self.end_game_button = ttk.Button(self.live_page, text="End Game", command=self.end_game_check)
         self.end_game_button.grid(row=row_count_memory, column=4)
 
     def plus_function(self):

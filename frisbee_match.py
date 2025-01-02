@@ -280,7 +280,7 @@ class FrisbeeGame():
         message_string = ""
         for player in self.point_lineups[reference_point_number]:
             message_string = message_string + player + " // "
-        wind_direction_indicator = (self.wind_direction + 3) / 2
+        wind_direction_indicator = int((self.wind_direction + 3) / 2)
         message_string = message_string + "Wind direction " + str(wind_direction_indicator)
         messagebox.showinfo(title=messagebox_title, message=message_string)
         
