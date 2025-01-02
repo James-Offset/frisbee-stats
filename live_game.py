@@ -3,6 +3,7 @@
 """Third Party Code"""
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import pandas as pd
 
 class LiveGame():
@@ -157,7 +158,7 @@ class LiveGame():
         self.half_time_button.grid(row=row_count_memory, column=4)
 
         row_count_memory+=2
-        self.end_game_button = tk.Button(self.live_page, text="End Game", font=('Arial', 18), command=self.end_game)
+        self.end_game_button = tk.Button(self.live_page, text="End Game", font=('Arial', 18), command=self.end_game_check)
         self.end_game_button.grid(row=row_count_memory, column=4)
 
     def plus_function(self):
@@ -268,6 +269,18 @@ class LiveGame():
 
         # change the text indication
         self.switch_possession_text()
+
+    def end_game_check(self):
+        """Puts out a message box to ask for confirmation as to whether to end the game"""
+
+        # use a confirmation pop up 
+        confirmation = messagebox.askyesno(message="Are you sure you want to end the game?",icon = "question",title = "Install" )
+
+        print(confirmation)
+
+        if confirmation == True:
+            self.end_game()
+
 
     def end_game(self):
         """Ends the live game"""

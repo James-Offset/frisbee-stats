@@ -163,7 +163,7 @@ class RosterTab():
         self.update_count_label()
 
         # add the player to the GUI
-        self.add_player_to_GUI()
+        self.add_player_to_GUI(player_name, player_number)
 
         # sort the players alphabetically
         self.sort_players()

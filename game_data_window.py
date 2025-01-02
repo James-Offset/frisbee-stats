@@ -138,7 +138,7 @@ class NewGameWindow():
             self.entry_box.bind("<Return>", self.submit_info)
         elif self.config_dict["requests"][self.request_number]["radio options"] == "integer":
             # looking for an integer entry
-            self.entry_box = tk.Text(self.request_frame, height=1, width=5, font=('Arial', 16))
+            self.entry_box = ttk.Entry(self.request_frame, textvariable=self.user_entry, width=5)
             self.entry_box.pack(pady=5)
             self.entry_box.bind("<Return>", self.submit_info)
         else:
@@ -188,10 +188,12 @@ class NewGameWindow():
 
         if len(entry) > 10 or len(entry) < 1:
             self.error_message = "Entry does not meet length requirements (max 10 characters)"
-            self.respond_to_invalid_entry()
+            # display the error message
+            self.status_label.config(text=self.error_message)
         elif entry in self.invalid_entries:
             self.error_message = "Player number already taken"
-            self.respond_to_invalid_entry()
+            # display the error message
+            self.status_label.config(text=self.error_message)
         else:
             # add the information to the output list
             self.output_data.append(entry)
@@ -203,8 +205,7 @@ class NewGameWindow():
         """Check to see if the given entry is a suitable integer"""
 
         # get the entry from the box
-        entry = self.entry_box.get('1.0', tk.END)
-        entry = entry[:-1] # take off the new line that gets added
+        entry = self.user_entry.get()
 
         # set up an error flag
         self.error_message = None
@@ -229,7 +230,8 @@ class NewGameWindow():
             self.follow_successful_entry()
             
         else:
-            self.respond_to_invalid_entry()
+            # display the error message
+            self.status_label.config(text=self.error_message)
             
 
     def check_radio_entry(self):
@@ -248,12 +250,6 @@ class NewGameWindow():
             # the user must have not chosen an option yet.
             self.error_message = "Please select an option, then click submit"
             self.status_label.config(text=self.error_message)
-
-    def respond_to_invalid_entry(self):
-        """Carries out actions if the user entered an invalid answer"""
-
-        # display the error message
-        self.status_label.config(text=self.error_message)
 
     def follow_successful_entry(self):
 

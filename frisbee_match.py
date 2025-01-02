@@ -165,8 +165,8 @@ class FrisbeeGame():
         self.list_of_numbers_of_turns.append(self.number_of_turns)
         self.wind_direction_list.append(self.wind_direction)
 
-        # get the basic stats
-        self._work_out_team_performance()
+        # calculate how many possessions each team had and who won the point
+        self._work_out_the_number_of_possessions()
 
         # update the game page
         self._update_game_display_tab()
@@ -175,7 +175,7 @@ class FrisbeeGame():
         self.o_start_indicator = 1 - (self.team_point * 2)
 
         # update the stats for each individual player
-        self._update_player_stats()
+        self._feed_game_information_to_player_classes()
         
         # update the main DataFrame which is used for machine learning
         self.update_main_data_frame()
@@ -187,7 +187,7 @@ class FrisbeeGame():
         return self.live_score_text
 
 
-    def _work_out_team_performance(self):
+    def _work_out_the_number_of_possessions(self):
         """Uses the number of turns to work out the team stats"""
         
         # work out whether the point was a hold or a break
@@ -285,7 +285,7 @@ class FrisbeeGame():
         messagebox.showinfo(title=messagebox_title, message=message_string)
         
 
-    def _update_player_stats(self):
+    def _feed_game_information_to_player_classes(self):
         """Feeds relevant stats back to each player"""
 
         # update the stats record for the full team
