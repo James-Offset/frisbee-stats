@@ -93,7 +93,7 @@ class AwardsTab():
         # create a dictionary to hold the details of the GUI columns
         self.gui_columns = {
             "heading text" : ["Award", "Winner", "Description"],
-            "column weighting" : [2, 2, 2],
+            "column weighting" : [2, 2, 4],
             "label elements" : {}
         }
 

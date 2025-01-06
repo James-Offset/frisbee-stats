@@ -5,10 +5,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-from sklearn.model_selection import GridSearchCV
 import json
 
 """My Code"""
@@ -17,6 +13,7 @@ from frisbee_match import FrisbeeGame
 from team_roster import Team
 from live_game import LiveGame
 from game_data_window import NewGameWindow
+from machine_learning import MachineLearning
 
 
 class MainGUI():
@@ -295,95 +292,18 @@ class MainGUI():
         self.live_game = LiveGame(self, opp_name, self.number_of_games, team_on_defence)
 
     def run_machine_learning_analysis(self):
-        """When called this method will run all the necessary functions to produce the player coefficients"""
+        """This method calls the machine learning class"""
 
-        # set up necessary dictionarys to hold offence and defence variables
-        self.variable_factors = {}
-        self.success_counts = {}
-        self.input_training_data = {}
-        self.input_test_data = {}
-        self.output_training_data = {}
-        self.output_test_data = {}
-        self.output_predictions = {}
+        # collect a list of opponents
+        opponents = []
+        for game in self.games:
+            opponents.append(self.games[game].opp_name)
 
-        for poss_type in ("offence", "defence"):
-            # run the calculations
-            self.machine_learning_computation(poss_type)
+        # create the class for machine learning
+        self.ml_class = MachineLearning(self, self.mldf, self.environment, self.team.roster_tab.player_dictionary, opponents)
 
-    def machine_learning_computation(self, poss_type):
-        """Runs the computational steps for offence or defence"""
-
-        print(f"\n--- Analysing {poss_type} data: ---\n")
-
-        # create our matricies that capture the x and y data for machine learning, aka separate the inputs and outputs
-        self.variable_factors[poss_type] = self.mldf[poss_type].drop(columns=["Success"])
-        self.success_counts[poss_type] = self.mldf[poss_type]["Success"]
-        
-        # split the data into training and test datasets
-        self.input_training_data[poss_type], self.input_test_data[poss_type], self.output_training_data[poss_type], self.output_test_data[poss_type] = train_test_split(self.variable_factors[poss_type], self.success_counts[poss_type], test_size=0.25, random_state=14)
-
-        # Initialize logistic regression model with L2 regularization (default)
-        self.model = LogisticRegression(penalty='l2', solver='lbfgs', max_iter=1000)
-
-        # Fit the model to the training data
-        self.model.fit(self.input_training_data[poss_type], self.output_training_data[poss_type])
-
-        # Predict on the test set
-        self.output_predictions[poss_type] = self.model.predict(self.input_test_data[poss_type])
-
-        print(f"\n** Default Settings **")
-
-        self.print_machine_learning_outputs(poss_type)
-
-        print(f"\n** Grid Search Settings **")
-
-        self.refine_parameters(poss_type)
-        self.print_machine_learning_outputs(poss_type)
-
-    def refine_parameters(self, poss_type):
-        """Uses cross validation to refine the machine learning model"""
-
-        # Define the parameter grid
-        param_grid = {
-            'C': [0.01, 0.1, 0.5, 1],  # Inverse of regularization strength
-            'penalty': ['l2'],
-            'solver': ['lbfgs'],
-        }
-
-        # Initialize the grid search
-        grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=3, scoring='accuracy' ,return_train_score=True, verbose=10)
-        grid_search.fit(self.input_training_data[poss_type], self.output_training_data[poss_type])
-
-        # Best parameters
-        print("Best parameters:", grid_search.best_params_)
-
-        # show the parameters for the best version
-        best_model = grid_search.best_estimator_
-        print(best_model.score(self.input_test_data[poss_type], self.output_test_data[poss_type]))
-
-        # Predict on the test set
-        self.output_predictions[poss_type] = best_model.predict(self.input_test_data[poss_type])
-
-
-    def print_machine_learning_outputs(self, poss_type):
-        """prints the outputs of the machine learning analysis"""
-
-        # Evaluate performance
-        print("Accuracy:", accuracy_score(self.output_test_data[poss_type], self.output_predictions[poss_type]))
-        print("\nConfusion Matrix:\n", confusion_matrix(self.output_test_data[poss_type], self.output_predictions[poss_type]))
-        print("\nClassification Report:\n", classification_report(self.output_test_data[poss_type], self.output_predictions[poss_type]))
-
-        # Get the coefficients
-        coefficients = self.model.coef_[0]  # Coefficients for each feature
-        players = self.variable_factors[poss_type].columns            # Feature names
-
-        # Combine into a DataFrame for easy interpretation
-        player_performance = pd.DataFrame({
-            'Player': players,
-            'Impact': coefficients
-        }).sort_values(by='Impact', ascending=False)
-
-        print(player_performance)
+        # disable the button
+        self.ml_button.state(['disabled'])
 
     def save_data(self):
         """Saves all the data acquired so far into a json file"""
