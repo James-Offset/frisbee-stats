@@ -41,11 +41,19 @@ class AwardsTab():
 
         # establish a dictionary of winners
         self.winners = {}
+
+        #!! since we haven't got a function for each award yet, we add another step
+        self.list_of_valid_awards = []
         for award in self.awards_definitions:
-            self.winners[award] = {
-                "Highest Recorded Score" : 0,
-                "Holder of Highest Score" : "-",
-            }
+            if self.awards_definitions[award][1] == 0:
+                pass # way to determine winner does not exist yet
+            else:
+                self.list_of_valid_awards.append(award)
+
+                self.winners[award] = {
+                    "Highest Recorded Score" : 0,
+                    "Holder of Highest Score" : "-",
+                }
 
     def _create_notebook_tab(self):
         """Creates a new tab in the notebook and sets up scroll capability"""
@@ -67,8 +75,8 @@ class AwardsTab():
         self.scrollable_window = self.canvas.create_window((0,0), anchor='nw', window=self.awards_frame)
 
         # extra scrolling functionality
-        self.awards_frame.bind("<Configure>", self.update_scroll_region)
-        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+        #!! self.awards_frame.bind("<Configure>", self.update_scroll_region)
+        #self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
         self.canvas.bind("<Configure>", self.resize_scrollable_frame)
 
         # fill out the inner frame
@@ -126,7 +134,8 @@ class AwardsTab():
         self.row_number = 1
 
         # create a new row for each award
-        for award in self.awards_definitions:
+        for award in self.list_of_valid_awards:
+
             # increment row number
             self.row_number += 1
 
@@ -145,25 +154,18 @@ class AwardsTab():
 
     def calculate_awards(self):
         """Calculates the scores for each player, and thus who wins the award"""
-        
-        # run through each player
-        for player in self.parent.roster:
 
-            # run through each award category and compare if the player beats the previous score
-            for award in self.awards_definitions:
-
-                #!! until we get a method for each award, this check needs to be in
-                if self.awards_definitions[award][1] == 0:
-                    pass
-                else:
-                    self.process_player_score(award, player)
+        # run through each award category 
+        for award in self.list_of_valid_awards:
         
-        # update the gui output
-        for award in self.awards_definitions:
+            # run through each player and compare if the player beats the previous score
+            for player in self.parent.roster:
+                self.process_player_score(award, player)
+        
+            # update the gui output
             self.gui_awards_winners[award].config(text=self.winners[award]["Holder of Highest Score"])
         
-        # wipe all the scores so that the next time awards are awarded it is done with a clean slate
-        for award in self.awards_definitions:
+            # wipe all the scores so that the next time awards are awarded it is done with a clean slate
             self.winners[award]["Highest Recorded Score"] = 0
                     
     

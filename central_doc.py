@@ -43,16 +43,6 @@ class MainGUI():
         # create a blank dictionary to store our game classes
         self.games = {}
         self.number_of_games = 0 
-
-        # set up a few markers
-        self.data_extracted = False
-        self.game_import = False
-        self.metadata_flag = 0
-        self.load_from_json = False #!! move this later when adding import selection
-
-        #!! Set up some temporary opp names
-        self.opp_name_count = 0
-
                 
         # run the app
         self.root.mainloop()
@@ -75,16 +65,14 @@ class MainGUI():
         self.start_label.pack(pady=2)
 
         # add a button to start the program
-        self.program_start_button = ttk.Button(self.home_page, text="Start Program", command=self.user_starts_program)
+        self.program_start_button = ttk.Button(self.home_page, text="Start Program", command=self.user_starts_tournament)
         self.program_start_button.pack(padx=10,pady=10)
 
         # add a status label
-        self.import_status_label = tk.Label(self.home_page, text="Alternatively, click below to import a dataset:")
+        self.status_label_text = tk.StringVar()
+        self.status_label_text.set("Alternatively, click below to import a dataset:")
+        self.import_status_label = tk.Label(self.home_page, textvariable=self.status_label_text)
         self.import_status_label.pack(pady=5)
-
-        # add a button to import the data we already have
-        self.import_data_button = ttk.Button(self.home_page, text="Import Data", command=self.extract_stock_data)
-        self.import_data_button.pack(padx=10,pady=10)
 
         # add a load tournament info button
         self.load_data_button = ttk.Button(self.home_page, text="Load Tournament Data", command=self.load_data)
@@ -93,17 +81,17 @@ class MainGUI():
         # add a save tournament info button
         self.save_data_button = ttk.Button(self.home_page, text="Save Tournament Data", command=self.save_data)
         self.save_data_button.pack(padx=20, pady=5)
-
+        
         # add a status label
-        self.player_entry_status_label = tk.Label(self.home_page, text="Click the button above to enter new player info")
-        self.player_entry_status_label.pack(pady=2)
+        self.player_entry_status_label = tk.Label(self.home_page, text="Click the button below to start a new game")
+        self.player_entry_status_label.pack(pady=20)
 
         # add new game button
         self.new_game_button = ttk.Button(self.home_page, text="Start New Game", command=self.manual_game_start)
-        self.new_game_button.pack(padx=20, pady=20)
+        self.new_game_button.pack(padx=20, pady=10)
 
         # add a button to run the analysis
-        self.ml_button = ttk.Button(self.home_page, text="Do Machine Learning!", command=self.run_machine_learning_analysis)
+        self.ml_button = ttk.Button(self.home_page, text="Do Machine Learning!", command=self.run_machine_learning_analysis, state=["disabled"])
         self.ml_button.pack(padx=20, pady=20)
 
         # disable buttons not immediately useful
@@ -111,6 +99,8 @@ class MainGUI():
         
     def user_starts_program(self):
         """This method is called when the user first pushes the start program button"""
+
+        """!! This method is currently unused in favor of the start tournament method. To be resotred if I implement scrimmage functionality"""
         
         # create a new class to handle the data entry window
         window = NewGameWindow(self.root, "new program")
@@ -129,6 +119,29 @@ class MainGUI():
                 self.program_start_button.config(command=self.manual_metadata_receive)
                 self.program_start_button.config(text="Enter Info")
                 self.start_label.config(text="Click the button below to enter tournament infomation")
+
+    def user_starts_tournament(self):
+        """This method is called when the user first pushes the start program button"""
+
+        """!! This method is currently unused in favor of the start tournament method. To be resotred if I implement scrimmage functionality"""
+        
+        # create a new class to handle the data entry window
+        window = NewGameWindow(self.root, "tournament (temporary)")
+
+        # collect the returned info
+        data_provision_success, provided_info = window.return_info()
+
+        if data_provision_success == True:
+            # if we successfully get the data, copy it out
+            self.tournament_name = provided_info[0]
+            self.team_name = provided_info[1]
+            self.environment = provided_info[2]
+            self.number_of_players_at_once = int(provided_info[3]) 
+
+            # continue with the set up
+            self.complete_set_up()
+
+        # if not then nothing happens
 
     def manual_metadata_receive(self):
         """This is the method that will trigger when the metadata button is pushed"""
@@ -158,6 +171,7 @@ class MainGUI():
 
         # change the status of buttons
         self.program_start_button.state(["disabled"])
+        self.status_label_text.set("Manual Data Provided")
         
         # set up storage for tournament data for machine learning
         self.mldf = {}
@@ -169,66 +183,49 @@ class MainGUI():
         # add an empty headings list
         self.data_frame_headings = []
 
-    def extract_stock_data(self):
+        # add a flag for the exisitance of a machine learning class
+        self.ml_flag = False
+
+    def extract_stock_data(self, filename, file_type):
         """Looks at the provided excel file and creates dictionaries of all player and game data"""
 
-        #!!
-        self.environment = "Outdoors"
+        # import all the data
+        if file_type == "json":
+            self.tournament_metadata = self.loaded_data["metadata"]
+            self.imported_roster = self.loaded_data["players"]
+            self.raw_game_data = self.loaded_data["game_data"] 
+        else:
+            extraction_tool = DataExtractor()
+            self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data(filename)
 
-        # check if we have extracted the data already
-        if self.data_extracted == False:
+        # copy out the metadata
+        self.tournament_name = self.tournament_metadata["Tournament Name"]
+        self.team_name = self.tournament_metadata["Team Name"]
+        self.number_of_players_at_once = self.tournament_metadata["Players per Point"]
+        self.environment = self.tournament_metadata["Environment"]
 
-            # import all the data
-            if self.load_from_json == True:
-                self.tournament_metadata = self.loaded_data["metadata"]
-                self.imported_roster = self.loaded_data["players"]
-                self.raw_game_data = self.loaded_data["game_data"] 
-            else:
-                extraction_tool = DataExtractor()
-                self.tournament_metadata, self.imported_roster, self.raw_game_data = extraction_tool.import_stock_data()
+        # now we have the metadata, we can complete the set up
+        self.complete_set_up()
 
-            # set the flag to True
-            self.data_extracted = True
+        # create player classes
+        for player in self.imported_roster:
+            self.team.roster_tab.add_player_to_records(player, self.imported_roster[player]['Player Number'])
 
-            # copy out the metadata
-            self.tournament_name = self.tournament_metadata["Tournament Name"]
-            self.team_name = self.tournament_metadata["Team Name"]
-            self.number_of_players_at_once = self.tournament_metadata["Players per Point"]
+        # create game classes
+        self._create_game_classes_from_import()
 
-            # now we have the metadata, we can complete the set up
-            self.complete_set_up()
-
-            # change button text once data is extracted !! move this later
-            self.resultsContents = tk.StringVar()
-            self.import_status_label['textvariable'] = self.resultsContents
-            self.resultsContents.set('Import Game Data')
-
-            # create player classes
-            for player in self.imported_roster:
-                self.team.roster_tab.add_player_to_records(player, self.imported_roster[player]['Player Number'])
-
-        elif self.game_import == False: #!! change this all to one step (from two) later
-            # create game classes
-            self._create_game_classes_from_import()
-
-            # change flags and markers
-            self.game_import = True
-            self.resultsContents.set('Data extracted')
-            self.import_data_button.state(["disabled"])
+        # change flags and markers
+        self.status_label_text.set('Data imported')
+        self.load_data_button.state(["disabled"])
                     
     def _create_game_classes_from_import(self):
         """Creates a class for each game played and runs the relevant functions"""
 
         # create a loop for each game
-        for game_number in range(self.tournament_metadata['Number of Games']):
-
-            game_number += 1 # start on 1, not 0
-
-            # establish the game tag
-            game_tag = "Game " + str(game_number)
+        for game in self.raw_game_data:
 
             # call the new game method
-            self.start_new_game(self.raw_game_data[game_tag]["Opponent"], self.raw_game_data[game_tag]["Starting on Defence"])
+            self.start_new_game(self.raw_game_data[game]["Opponent"], self.raw_game_data[game]["Starting on Defence"])
 
             # find the set of raw data that applies to that game
             for name_of_considered_game in self.raw_game_data:
@@ -275,6 +272,8 @@ class MainGUI():
         if self.environment == "Outdoors":
             wind_name = game_class_ref + " Wind"
             self.team.add_player_to_main_DF(wind_name)
+        else:
+            wind_name = None
 
         # create a new class with the assembled input data
         self.games[game_class_ref] = FrisbeeGame(self, self.number_of_games, opp_name, team_on_defence, wind_name)
@@ -299,9 +298,18 @@ class MainGUI():
         for game in self.games:
             opponents.append(self.games[game].opp_name)
 
-        # create the class for machine learning
-        self.ml_class = MachineLearning(self, self.mldf, self.environment, self.team.roster_tab.player_dictionary, opponents)
+        if self.ml_flag ==False:
+            # create the class for machine learning
+            self.ml_class = MachineLearning()
 
+            self.ml_flag = True
+            
+        else:
+            self.ml_class.destroy_notebook_tab()
+        
+        # call the class to carry out the machine learning #!!neaten this all later
+        self.ml_class.carry_out_machine_learning(self, self.mldf, self.environment, self.team.roster_tab.player_dictionary, opponents)
+        
         # disable the button
         self.ml_button.state(['disabled'])
 
@@ -373,20 +381,20 @@ class MainGUI():
         # check the user actually selected a file
         try:
             print(filename)
-            if filename[-4:] == "xslx":
-                self.file_type = "Excel"
-            elif filename[-4] == "json":
-                self.file_type = "json"
+            if filename[-4:] == "xlsx":
+                file_type = "Excel"
+            elif filename[-4:] == "json":
+                file_type = "json" #!! put in some kind of notification for an invalid file choice
 
                 # load data into a python dictionary
                 with open(filename) as f:
                     self.loaded_data = json.load(f)    
 
-                #!! set the flag and call the data extraction function
-                self.load_from_json = True
-                self.extract_stock_data()  
         except Exception:
-            pass  
+            pass
+        else:
+            # call the data extraction function
+            self.extract_stock_data(filename, file_type)  
 
 # call the main code
 if __name__ == "__main__":

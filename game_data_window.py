@@ -78,6 +78,30 @@ class NewGameWindow():
                 ]
             }
 
+        elif self.mode == "tournament (temporary)": #!! remove this if scrimmage functionality added
+            self.config_dict = {
+                "title" : "New Tournament",
+                "heading" : "Tournment Info",
+                "requests" : [
+                    {
+                    "prompt" : "Please enter the tournament name",
+                    "radio options" : None
+                    },
+                    {
+                    "prompt" : "Please enter your team name",
+                    "radio options" : None
+                    },
+                    {
+                    "prompt" : "What is the environment?",
+                    "radio options" : ["Outdoors", "Indoors"]
+                    },
+                    {
+                    "prompt" : "How many players per side?",
+                    "radio options" : ["5", "7"]
+                    },
+                ]
+            }
+
         elif self.mode == "new player":
             self.config_dict = {
                 "title" : "New Player",

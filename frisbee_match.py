@@ -22,11 +22,46 @@ class FrisbeeGame():
         self.game_page.pack()
         self.parent.notebook.add(self.game_page, text=self.name)
 
-        # populate the GUI
-        self._configure_table()
+        # set up the GUI
+        self._create_game_stats_canvas()
 
         # set up additional dicitionaries and variables needed to track the match
         self._initiate_game_state()
+
+    def _create_game_stats_canvas(self):
+        """Creates the scollable canvas where the player names go"""
+
+        # create the canvas and scrollbar
+        self.canvas = tk.Canvas(self.game_page)
+        self.v_scrollbar = ttk.Scrollbar(self.game_page, orient='vertical', command=self.canvas.yview)
+        self.canvas['yscrollcommand'] = self.v_scrollbar.set
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.v_scrollbar.pack(side="right", fill="y")
+
+        # add a new frame to the canvas
+        self.game_record_frame = tk.Frame(self.canvas)
+        self.scrollable_window = self.canvas.create_window((0,0), anchor='nw', window=self.game_record_frame)
+
+        # extra scrolling functionality
+        self.game_record_frame.bind("<Configure>", self.update_scroll_region)
+        self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
+        self.canvas.bind("<Configure>", self.resize_scrollable_frame)
+
+        # populate the GUI
+        self._configure_table()
+
+    def resize_scrollable_frame(self, event):
+        # Ensure the frame width matches the canvas width
+        canvas_width = event.width
+        self.canvas.itemconfig(self.scrollable_window, width=canvas_width)
+
+    def update_scroll_region(self, event):
+        # Update the scroll region when the frame changes
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_mousewheel(self, event):
+        # Enable mousewheel scrolling
+        self.canvas.yview_scroll(-1 * int(event.delta / 120), "units")
 
     def _configure_table(self):
         """Sets up the table that presents the game summary on the game tab"""
@@ -54,14 +89,14 @@ class FrisbeeGame():
         for column in self.gui_grid_dict["heading text"]:
 
             # create a column
-            self.game_page.columnconfigure(column_number, weight=self.gui_grid_dict["column weighting"][column_number])
+            self.game_record_frame.columnconfigure(column_number, weight=self.gui_grid_dict["column weighting"][column_number])
         
             # add heading labels
             if "separator" in column:
-                self.gui_grid_dict["label elements"][column] = ttk.Separator(self.game_page, orient="vertical")
+                self.gui_grid_dict["label elements"][column] = ttk.Separator(self.game_record_frame, orient="vertical")
                 self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky='ns', padx=1)
             else:
-                self.gui_grid_dict["label elements"][column] = tk.Label(self.game_page, text=self.gui_grid_dict["heading text"][column_number], font=('Arial', 18))
+                self.gui_grid_dict["label elements"][column] = tk.Label(self.game_record_frame, text=self.gui_grid_dict["heading text"][column_number], font=('Arial', 18))
                 self.gui_grid_dict["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=5)
 
             column_number += 1
@@ -70,7 +105,7 @@ class FrisbeeGame():
         self.gui_grid_dict["label elements"]["button"].config(text="")
 
         # horizontal Separator
-        s0 = ttk.Separator(self.game_page, orient='horizontal')
+        s0 = ttk.Separator(self.game_record_frame, orient='horizontal')
         s0.grid(row=1, column = 0, sticky=tk.W + tk.E, columnspan=8 , pady=5)
 
         # create a dictionary to hold the gui elements for each point, which will have its own row of the table
@@ -133,7 +168,7 @@ class FrisbeeGame():
         """At the beginning of the game, or after half time, set the indicator for who starts on offence"""
 
         # record a modifier for who starts the point on defence
-        if self.defence_start == 'Us':
+        if self.defence_start == 'Us' or self.defence_start == "My Team":
             self.o_start_indicator = -1
         else:
             self.o_start_indicator = 1
@@ -260,14 +295,14 @@ class FrisbeeGame():
         for element in self.gui_grid_dict["heading text"]:
             if element == "button":
                 # add a button that can be clicked to see who was on that point
-                self.point_gui_rows[self.row_number_ref][element] = tk.Button(self.game_page, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
+                self.point_gui_rows[self.row_number_ref][element] = tk.Button(self.game_record_frame, text="+", font=('Arial', 12), command=lambda t=self.point_number: self.show_players_on_pitch(t))
                 self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky=tk.W + tk.E, pady=2)
             elif "separator" in element:
                 # redraw the separator from the top
                 self.gui_grid_dict["label elements"][element].grid(row=0, rowspan=self.row_number+1, column=column_number, sticky="ns", padx=3)
             else:
                 # add a new label displaying the relevant info
-                self.point_gui_rows[self.row_number_ref][element] = tk.Label(self.game_page, text=text_entries[element], font=('Arial', 16))
+                self.point_gui_rows[self.row_number_ref][element] = tk.Label(self.game_record_frame, text=text_entries[element], font=('Arial', 16))
                 self.point_gui_rows[self.row_number_ref][element].grid(row=self.row_number_ref, column=column_number, sticky='ew')
 
             # increment column number

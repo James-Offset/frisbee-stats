@@ -9,19 +9,11 @@ class DataExtractor():
     def __init__(self):
         pass
  
-    def import_stock_data(self):
+    def import_stock_data(self, filename):
         """Imports the data we have from the excel file that tells us what happened in the tournament"""
 
-        # identify the current directory
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-
-        # build the filename
-        #!!stock_filename = "Data from Mens Indoor Regionals.xlsx"
-        stock_filename = "Glasto 2019.xlsx"
-        path_to_data = os.path.join(current_directory, stock_filename)
-
         # open the excel doc
-        self.workbook = openpyxl.load_workbook(path_to_data, data_only=True)
+        self.workbook = openpyxl.load_workbook(filename, data_only=True)
 
         # extract relevant data points
         self.set_up_tournament_metadata()
@@ -41,9 +33,8 @@ class DataExtractor():
         self.tournament_metadata = {
             "Team Name" : sheet['B1'].value,
             "Tournament Name" : sheet['B2'].value,
-            "Players per Point" : sheet['E17'].value,
-            "Number of Games" : 0,
-            "Environment" : "Outdoors",
+            "Players per Point" : sheet['C4'].value,
+            "Environment" : sheet['B3'].value,
         }
 
 
@@ -55,18 +46,16 @@ class DataExtractor():
 
         sheet = self.workbook["Front Page"]
 
-        for row in range(8, 24):
+        for row in range(8, 40):
             # capture player name and number
             player_name = sheet.cell(row=row, column=2).value
             player_number = sheet.cell(row=row, column=3).value
 
-            if player_name == "Player":
+            if player_name == None:
                 break
             else:
                 self.roster[player_name] = {}
                 self.roster[player_name]["Player Number"] = player_number
-
-        self.tournament_metadata["Number of Players"] = len(self.roster)
 
     def all_games_data_check(self):
         """Checks which sheets have data and then calls the extraction function for those"""
@@ -88,7 +77,7 @@ class DataExtractor():
                 sheet_to_review = self.workbook[sheet_name]
 
                 # look at a cell that should have data
-                test_point = sheet_to_review['G8'].value
+                test_point = sheet_to_review['G4'].value
 
                 try:
                     int_test_point = int(test_point)
@@ -105,7 +94,6 @@ class DataExtractor():
 
         game_opponent = sheet["B1"].value
         team_start_on_defence = sheet['B5'].value
-        self.tournament_metadata["Number of Games"] += 1
 
         # set up the reference name of the game and log info
         game_name = "Game " + game_number_string
@@ -119,13 +107,6 @@ class DataExtractor():
         # add an entry for each player to capture whether they were playing that point
         for player in self.roster:
             self.raw_game_data[game_name][player] = []
-
-        # check the order in which players are listed in the spreadsheet
-        players_on_sheet = []
-        for i in range(self.tournament_metadata["Number of Players"]):
-            column_number = 8+i
-            player = sheet.cell(row=1, column=column_number).value
-            players_on_sheet.append(player)
 
         # loop through each row and capture the data
         for row in range(2,31):
@@ -141,10 +122,10 @@ class DataExtractor():
                 self.raw_game_data[game_name]["Turns per Point"].append(turns_integer)
 
                 # for each player, log if they were on that point
-                i = 0
+                column = 8
                 active_players = []
-                for player in players_on_sheet:
-                    player_presence = sheet.cell(row=row, column=8+i).value
+                for player in self.roster:
+                    player_presence = sheet.cell(row=row, column=column).value
 
                     if player_presence == 1:
                         # player was on the pitch
@@ -153,7 +134,7 @@ class DataExtractor():
                     else:
                         # player was not on pitch
                         self.raw_game_data[game_name][player].append(0)
-                    i += 1
+                    column += 1
                 
                 # update the raw data dict with the list of active players
                 self.raw_game_data[game_name]["Active Players"].append(active_players)

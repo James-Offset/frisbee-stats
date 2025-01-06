@@ -128,7 +128,7 @@ class LiveGame():
             self.roster_widgets[player]["number_col"] = tk.Label(self.live_page, text=number_text, font=('Arial', 14))
             self.roster_widgets[player]["number_col"].grid(row=row_count , column =2 , sticky=tk.W + tk.E)
 
-            # add checkboxes here
+            # add buttons here
             self.roster_widgets[player]["playing status"] = tk.StringVar()
             self.roster_widgets[player]["check_col"] = tk.Button(self.live_page, textvariable=self.roster_widgets[player]["playing status"], font=('Arial', 14))
             self.roster_widgets[player]["check_col"].config(command=lambda t=player: self.update_player_total(t))
@@ -192,7 +192,7 @@ class LiveGame():
     def update_player_total(self, player_name):
         """When a button is pushed, we update the count of players marked to be on the field"""
 
-        if self.roster_widgets[player_name]["playing status"] == "On": # player is on the pitch
+        if self.roster_widgets[player_name]["playing status"].get() == "On": # player is on the pitch
             # reduce the count for the number of players
             self.number_of_players_on_pitch -= 1
             # remove the player name from the list of active players
@@ -276,8 +276,6 @@ class LiveGame():
         # use a confirmation pop up 
         confirmation = messagebox.askyesno(message="Are you sure you want to end the game?",icon = "question",title = "Install" )
 
-        print(confirmation)
-
         if confirmation == True:
             self.end_game()
 
@@ -290,6 +288,7 @@ class LiveGame():
 
         # reactivate the button for a new game
         self.parent.new_game_button.state(["!disabled"])
+        self.parent.ml_button.state(["!disabled"])
         
         # close the live game tab
         self.live_page.destroy()

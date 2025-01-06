@@ -11,9 +11,11 @@ from tkinter import ttk
 import pandas as pd
 
 class MachineLearning():
-    def __init__(self, parent, game_data, environment, player_dictionary, list_of_opponents):
-        """establish variables and call main methods"""
+    def __init__(self):
+        pass
 
+    def carry_out_machine_learning(self, parent, game_data, environment, player_dictionary, list_of_opponents):
+        """When called this method will run all the necessary functions to produce the player coefficients"""
         self.parent = parent
         self.game_data = game_data
         self.environment = environment
@@ -21,14 +23,27 @@ class MachineLearning():
         self.list_of_opponents = list_of_opponents
 
         self.player_list = self.player_dictionary.keys()
+        self.number_of_players = len(self.player_list)
 
         # create a new tab in the notebook
         self._create_notebook_tab()
 
-        # run the algorithm
-        self.set_up_process()
+        # set up needed dictionaries
+        self.create_dictionaries()
 
+        for poss_type in ("offence", "defence"):
 
+            # creat a new sub dictionary for the results
+            self.results_dictionary[poss_type] = {}
+
+            # run the calculations
+            self.machine_learning_computation(poss_type)
+
+        # update the GUI
+        self._update_GUI()
+                
+        # sort the display elements
+        self.sort_gui_labels("Player Name")
 
     def _create_notebook_tab(self):
         """Creates a new tab in the notebook and sets up scroll capability"""
@@ -101,17 +116,20 @@ class MachineLearning():
                 self.gui_columns["label elements"][column].grid(row=0 , column = column_number, sticky=tk.W + tk.E, pady=10)
 
             column_number += 1
+
+        # add counts for the row position of gui elements
+        self.player_row_number = 1
+        self.non_player_row_number = 1 + self.number_of_players + self.player_row_number
         
-        # horizontal Separator
+        # horizontal Separators
         s0 = ttk.Separator(self.stats_frame, orient='horizontal')
         s0.grid(row=1, column = 0, sticky=tk.W + tk.E, columnspan=self.number_of_columns , pady=2)
 
-        # add award columns
-        self.number_of_player_rows = 1
-
+        s1 = ttk.Separator(self.stats_frame, orient='horizontal')
+        s1.grid(row=self.non_player_row_number, column = 0, sticky=tk.W + tk.E, columnspan=self.number_of_columns , pady=2)
+ 
     
-    def set_up_process(self):
-        """When called this method will run all the necessary functions to produce the player coefficients"""
+    def create_dictionaries(self):
 
         # set up necessary dictionarys to hold offence and defence variables
         self.variable_factors = {}
@@ -130,7 +148,7 @@ class MachineLearning():
             if factor in self.player_list:
                 player_numbers.append(self.player_dictionary[factor]["number"])
             else:
-                player_numbers.append(1000)
+                player_numbers.append(0)
 
         self.compilation_table = pd.DataFrame({
             "Player Name" : self.factor_list,
@@ -138,21 +156,7 @@ class MachineLearning():
         },
         index= self.factor_list
         )
-
-        for poss_type in ("offence", "defence"):
-
-            # creat a new sub dictionary for the results
-            self.results_dictionary[poss_type] = {}
-
-            # run the calculations
-            self.machine_learning_computation(poss_type)
-
-        # update the GUI
-        self._update_GUI()
-                
-        # sort the display elements
-        self.sort_gui_labels("Offence Coefficient")
-
+      
     def machine_learning_computation(self, poss_type):
         """Runs the computational steps for offence or defence"""
 
@@ -188,27 +192,27 @@ class MachineLearning():
 
         # Define the parameter grid
         param_grid = {
-            'C': [0.01, 0.1, 0.5, 1],  # Inverse of regularization strength
+            'C': [0.02, 0.05, 0.1, 0.5],  # Inverse of regularization strength
             'penalty': ['l2'],
             'solver': ['lbfgs'],
         }
 
         # Initialize the grid search
-        grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=3, scoring='accuracy' ,return_train_score=True, verbose=10)
+        grid_search = GridSearchCV(LogisticRegression(max_iter=1000), param_grid, cv=4, scoring='accuracy' ,return_train_score=True, verbose=10)
         grid_search.fit(self.input_training_data[poss_type], self.output_training_data[poss_type])
 
         # Best parameters
-        print("Best parameters:", grid_search.best_params_)
+        print(f"\nBest parameters: {grid_search.best_params_}")
 
         # show the parameters for the best version
         best_model = grid_search.best_estimator_
-        print(best_model.score(self.input_test_data[poss_type], self.output_test_data[poss_type]))
+        #print(best_model.score(self.input_test_data[poss_type], self.output_test_data[poss_type]))
 
         # Predict on the test set
         self.output_predictions[poss_type] = best_model.predict(self.input_test_data[poss_type])
 
         # update the display table
-        coefficients = self.model.coef_[0]
+        coefficients = best_model.coef_[0]
         rounded_coefficients = []
         for i in coefficients:
             rounded_coefficients.append(round(i,2))
@@ -235,12 +239,11 @@ class MachineLearning():
             'Impact': coefficients
         }).sort_values(by='Impact', ascending=False)
 
-        print(player_performance)
+        # print(player_performance)
 
     def _update_GUI(self):
         """Once the algorithm has worked out the coefficients, we update the GUI"""
         
-        print(self.compilation_table)
         for factor in self.factor_list:
             if factor in self.gui_labels:
                 pass
@@ -250,14 +253,24 @@ class MachineLearning():
 
 
     
-    def add_factors_to_gui(self, player):
+    def add_factors_to_gui(self, factor):
         """Adds a player to the GUI"""
 
-        # increment the row number 
-        self.number_of_player_rows += 1
+        if factor in self.player_list:
+
+            # increment the row number 
+            self.player_row_number += 1
+
+            relevant_row_number = self.player_row_number
+        
+        else:
+            # increment the row number 
+            self.non_player_row_number += 1
+
+            relevant_row_number = self.non_player_row_number
 
         # create a new sub-dictionary for the player labels
-        self.gui_labels[player] = {}
+        self.gui_labels[factor] = {}
 
         column_number = 0
 
@@ -265,8 +278,8 @@ class MachineLearning():
         for column in self.gui_columns["heading text"]:
             
             # add info label
-            self.gui_labels[player][column] = tk.Label(self.stats_frame, text=self.compilation_table[column][player], font=('Arial', 14))
-            self.gui_labels[player][column].grid(row=self.number_of_player_rows , column = column_number, sticky=tk.W + tk.E, pady=2)
+            self.gui_labels[factor][column] = tk.Label(self.stats_frame, text=self.compilation_table[column][factor], font=('Arial', 14))
+            self.gui_labels[factor][column].grid(row=relevant_row_number, column = column_number, sticky=tk.W + tk.E, pady=2)
 
             # increment column number
             column_number += 1
@@ -288,11 +301,16 @@ class MachineLearning():
         display_row = 1
 
         for factor in self.sorted_table["Player Name"]:
-            # increment row number
-            display_row += 1
+            if factor in self.player_list:
+                # increment row number
+                display_row += 1
 
-            for column in self.gui_columns["heading text"]:          
-                # change grid configuration
-                self.gui_labels[factor][column].grid_configure(row=display_row)
+                for column in self.gui_columns["heading text"]:          
+                    # change grid configuration
+                    self.gui_labels[factor][column].grid_configure(row=display_row)
 
+    def destroy_notebook_tab(self):
+        """destroys the notebook tab so a new one can be made"""
+
+        self.tab_page.destroy()
 
