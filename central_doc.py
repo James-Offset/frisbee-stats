@@ -171,7 +171,8 @@ class MainGUI():
 
         # change the status of buttons
         self.program_start_button.state(["disabled"])
-        self.status_label_text.set("Manual Data Provided")
+        self.load_data_button.state(['disabled'])
+        self.status_label_text.set("Game Data Provided")
         
         # set up storage for tournament data for machine learning
         self.mldf = {}
@@ -375,12 +376,13 @@ class MainGUI():
         """Loads a saved json file for a tournament"""
 
         #choose file to load
-        # filename = "stored_data/Glasto 2019.json"
         filename = filedialog.askopenfilename()
+        file_type = "invalid"
 
         # check the user actually selected a file
         try:
             print(filename)
+            print(filename[-4:])
             if filename[-4:] == "xlsx":
                 file_type = "Excel"
             elif filename[-4:] == "json":
@@ -393,8 +395,11 @@ class MainGUI():
         except Exception:
             pass
         else:
-            # call the data extraction function
-            self.extract_stock_data(filename, file_type)  
+            if file_type == "invalid":
+                print("Invalid file chosen")
+            else:
+                # call the data extraction function
+                self.extract_stock_data(filename, file_type)  
 
 # call the main code
 if __name__ == "__main__":

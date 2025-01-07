@@ -125,7 +125,7 @@ class NewGameWindow():
         """Creates the new window and adds the necessary widgets"""
         # create a new window
         self.game_metadata_window = tk.Toplevel(self.root)
-        self.game_metadata_window.geometry("400x250")
+        self.game_metadata_window.geometry("400x250+360+260")
         self.game_metadata_window.attributes("-topmost", 1)
         self.game_metadata_window.title(self.config_dict["title"])
         
